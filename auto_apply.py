@@ -8,7 +8,7 @@ class AutoApply:
         init(autoreset=True)
 
     @staticmethod
-    def __show_welcome_message() -> None:
+    def _show_welcome_message() -> None:
         print(Fore.CYAN + """👋 Welcome to AutoApply – Your Personal Job Application Assistant!
             \nWe're here to simplify your job search by automatically applying to relevant opportunities on your behalf. No more endless scrolling or repetitive clicks – just smart, efficient applications tailored to your preferences.
             
@@ -20,21 +20,21 @@ class AutoApply:
             """)
 
     @staticmethod
-    def __display_options() -> None:
+    def _display_options() -> None:
         print(Fore.MAGENTA +
               "\n0. Exit"
               "\n1. GlassDoor")
 
     def main(self) -> None:
-        self.__show_welcome_message()
+        self._show_welcome_message()
 
         while True:
-            self.__display_options()
+            self._display_options()
 
             try:
-                __user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
+                _user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
 
-                match __user_input:
+                match _user_input:
                     case 0:
                         print(Fore.YELLOW + "Bye!")
 

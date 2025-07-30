@@ -1,60 +1,129 @@
+import re
+import time
+
 from colorama import init, Fore
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver import Firefox
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 class GlassDoor:
     def __init__(self) -> None:
         init(autoreset=True)
 
-        self.__check_user_login: bool = bool()
-        self.__web_driver: Firefox = None
+        self._check_user_login: bool = bool()
+        self._web_driver: Firefox = None
+        self._email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
 
     @staticmethod
-    def __display_options() -> None:
+    def _display_options() -> None:
         print(Fore.GREEN + "\n***** GlassDoor Job Application *****")
         print(Fore.MAGENTA + "\n0. Exit"
               "\n1. Apply Using URL"
               "\n2. Apply with Job Search")
 
-    def __set_up(self) -> None:
-        __options: Options = Options()
-        __profile_path: str = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
+    def _set_up(self) -> None:
+        _options: Options = Options()
+        _profile_path: str = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
 
-        __options.set_preference("profile", __profile_path)
-        __options.add_argument("-profile")
-        __options.add_argument(__profile_path)
+        _options.set_preference("profile", _profile_path)
+        _options.add_argument("-profile")
+        _options.add_argument(_profile_path)
 
-        __service: Service =Service(executable_path=f"geckodriver-v0.36.0-win64/geckodriver.exe")
-        self.__web_driver = Firefox(service=__service, options=__options)
+        _service: Service =Service(executable_path=f"geckodriver-v0.36.0-win64/geckodriver.exe")
+        self._web_driver = Firefox(service=_service, options=_options)
 
-    def __check_if_user_is_logged_in(self) -> None:
-        self.__set_up()
+    def _get_email(self) -> str:
+        while True:
+            _email: str = input(Fore.BLUE + "\n Enter Email Address: ")
 
-        self.__web_driver.get("https://glassdoor.ca")
+            if re.match(self._email_pattern, _email):
+                return _email
+            else:
+                print(Fore.RED + "Invalid Input! Please Provide a Valid Email Address")
 
-        print(self.__web_driver.title)
+    def _log_user_in(self) -> None:
+        while True:
+            _url: str = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
 
-    def __apply_using_url(self) -> None:
-        if not self.__check_user_login:
-            self.__check_if_user_is_logged_in()
+            if "glassdoor" in _url:
+                break
+            else:
+                print(Fore.RED + "Invalid URL!")
+
+        _email: str = self._get_email()
+        _password: str = input(Fore.BLUE + "\nEnter Password: ")
+
+        self._set_up()
+        self._web_driver.get(_url)
+
+        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.ID, "inlineUserEmail")).send_keys(_email)
+        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.XPATH, "//button[span[text()='Continue with email']]")).click()
+        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.ID, "inlineUserPassword")).send_keys(_password)
+        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.XPATH, "//button[span[text()='Sign in']]")).click()
+
+        time.sleep(5)
+
+        if self._web_driver.title.__eq__("Community | Glassdoor"):
+            print(Fore.YELLOW + "\nYou are Logged In!")
         else:
-            print("User Logged In")
+            print(Fore.RED + "\nSomething went Wrong! Please try Again!")
+
+        self._web_driver.quit()
+
+
+    def _check_if_user_is_logged_in(self) -> None:
+        while True:
+            _url: str = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
+
+            if "glassdoor" in _url:
+                break
+            else:
+                print(Fore.RED + "Invalid URL!")
+
+        self._set_up()
+        self._web_driver.get(_url)
+
+        self._check_user_login = True if self._web_driver.title.__eq__("Community | Glassdoor") else False
+
+        self._web_driver.quit()
+
+        if self._check_user_login:
+            print(Fore.YELLOW + "User is Logged In!")
+        else:
+            print(Fore.YELLOW + "User is not Logged In!")
+
+            _response: str = input(Fore.YELLOW + "\nDo You Want to Log In? [Y | N]: ").lower()
+
+            if _response.__eq__("y"):
+                self._log_user_in()
+            else:
+                print(Fore.RED + "\nTo Apply for a Job You Must be Logged In")
+
+                return
+
+    def _apply_using_url(self) -> None:
+        print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
+
+        if not self._check_user_login:
+            self._check_if_user_is_logged_in()
 
     def main(self) -> None:
         while True:
-            self.__display_options()
+            self._display_options()
 
             try:
-                __user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
+                _user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
 
-                match __user_input:
+                match _user_input:
                     case 0:
                         print(Fore.YELLOW + "\nExited from GlassDoor Job Applications")
 
                         break
                     case 1:
-                        self.__apply_using_url()
+                        self._apply_using_url()
                     case _:
                         print(Fore.RED + "Invalid Input!")
             except ValueError:
