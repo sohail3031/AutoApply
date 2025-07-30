@@ -17,8 +17,11 @@ class GlassDoor:
 
         self._check_user_login: bool = bool()
         self._web_driver: Firefox = None
-        self._email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        self._email_pattern: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         self._web_driver_timeout: int = 10
+        self._glassdoor_landing_page_url: str = str()
+        self._firefox_profile_path: str = str()
+        self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
 
     @staticmethod
     def _display_options() -> None:
@@ -29,11 +32,10 @@ class GlassDoor:
 
     def _set_up(self) -> None:
         _options: Options = Options()
-        _profile_path: str = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
 
-        _options.set_preference("profile", _profile_path)
+        _options.set_preference("profile", self._firefox_profile_path)
         _options.add_argument("-profile")
-        _options.add_argument(_profile_path)
+        _options.add_argument(self._firefox_profile_path)
 
         _service: Service =Service(executable_path=f"geckodriver-v0.36.0-win64/geckodriver.exe")
         self._web_driver = Firefox(service=_service, options=_options)
@@ -51,16 +53,8 @@ class GlassDoor:
         _email: str = self._get_email()
         _password: str = getpass(Fore.BLUE + "\nEnter Password: ")
 
-        while True:
-            _url: str = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
-
-            if "glassdoor" in _url:
-                break
-            else:
-                print(Fore.RED + "Invalid URL!")
-
         self._set_up()
-        self._web_driver.get(_url)
+        self._web_driver.get(self._glassdoor_landing_page_url)
 
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserEmail"))).send_keys(_email)
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
@@ -86,16 +80,8 @@ class GlassDoor:
         self._web_driver.quit()
 
     def _check_if_user_is_logged_in(self) -> None:
-        while True:
-            _url: str = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
-
-            if "glassdoor" in _url:
-                break
-            else:
-                print(Fore.RED + "Invalid URL!")
-
         self._set_up()
-        self._web_driver.get(_url)
+        self._web_driver.get(self._glassdoor_landing_page_url)
 
         self._check_user_login = True if self._web_driver.title.__eq__("Community | Glassdoor") else False
 
@@ -121,7 +107,35 @@ class GlassDoor:
         if not self._check_user_login:
             self._check_if_user_is_logged_in()
 
+        _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
+
+        self._set_up()
+
+        self._web_driver.get(_url)
+
+    def _set_glassdoor_landing_page_url(self) -> None:
+        while True:
+            self._glassdoor_landing_page_url = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
+
+            if "glassdoor" in self._glassdoor_landing_page_url:
+                break
+            else:
+                print(Fore.RED + "Invalid URL!")
+
+    def _set_firefox_profile_path(self) -> None:
+        while True:
+            self._firefox_profile_path = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
+            _pattern: re = re.compile(self._firefox_profile_path_pattern, re.IGNORECASE)
+
+            if _pattern.match(self._firefox_profile_path):
+                break
+            else:
+                print(Fore.RED + "Invalid Profile Path!")
+
     def main(self) -> None:
+        self._set_glassdoor_landing_page_url()
+        self._set_firefox_profile_path()
+
         while True:
             self._display_options()
 
