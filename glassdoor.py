@@ -18,7 +18,7 @@ class GlassDoor:
         self._check_user_login: bool = bool()
         self._web_driver: Firefox = None
         self._email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        self._web_driver_timeout: int = self._web_driver_timeout
+        self._web_driver_timeout: int = 10
 
     @staticmethod
     def _display_options() -> None:
@@ -72,18 +72,18 @@ class GlassDoor:
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserEmail"))).send_keys(_email)
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserPassword"))).send_keys(_password)
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button")))
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button"))).click()
         except TimeoutException:
-            pass
+            print(Fore.RED + "\nSomething went Wrong! Please try Again!")
 
         time.sleep(5)
 
         if self._web_driver.title.__eq__("Community | Glassdoor"):
             print(Fore.YELLOW + "\nYou are Logged In!")
         else:
-            print(Fore.RED + "\nSomething went Wrong! Please try Again!")
+            print(Fore.RED + "\nUnable to Login! Something went Wrong! Please try Again!")
 
-        # self._web_driver.quit()
+        self._web_driver.quit()
 
     def _check_if_user_is_logged_in(self) -> None:
         while True:
