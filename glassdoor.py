@@ -8,6 +8,8 @@ from selenium.webdriver import Firefox
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from getpass import getpass
+from selenium.common.exceptions import TimeoutException
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -16,6 +18,7 @@ class GlassDoor:
         self._check_user_login: bool = bool()
         self._web_driver: Firefox = None
         self._email_pattern = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        self._web_driver_timeout: int = self._web_driver_timeout
 
     @staticmethod
     def _display_options() -> None:
@@ -37,7 +40,7 @@ class GlassDoor:
 
     def _get_email(self) -> str:
         while True:
-            _email: str = input(Fore.BLUE + "\n Enter Email Address: ")
+            _email: str = input(Fore.BLUE + "\nEnter Email Address: ")
 
             if re.match(self._email_pattern, _email):
                 return _email
@@ -45,6 +48,9 @@ class GlassDoor:
                 print(Fore.RED + "Invalid Input! Please Provide a Valid Email Address")
 
     def _log_user_in(self) -> None:
+        _email: str = self._get_email()
+        _password: str = getpass(Fore.BLUE + "\nEnter Password: ")
+
         while True:
             _url: str = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
 
@@ -53,16 +59,22 @@ class GlassDoor:
             else:
                 print(Fore.RED + "Invalid URL!")
 
-        _email: str = self._get_email()
-        _password: str = input(Fore.BLUE + "\nEnter Password: ")
-
         self._set_up()
         self._web_driver.get(_url)
 
-        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.ID, "inlineUserEmail")).send_keys(_email)
-        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.XPATH, "//button[span[text()='Continue with email']]")).click()
-        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.ID, "inlineUserPassword")).send_keys(_password)
-        WebDriverWait(self._web_driver, 10).until(EC.element_to_be_clickable(By.XPATH, "//button[span[text()='Sign in']]")).click()
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserEmail"))).send_keys(_email)
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserPassword"))).send_keys(_password)
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Sign in']]"))).click()
+
+        try:
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//div[@data-display-variant='full-bleed']")))
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserEmail"))).send_keys(_email)
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserPassword"))).send_keys(_password)
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button")))
+        except TimeoutException:
+            pass
 
         time.sleep(5)
 
@@ -71,8 +83,7 @@ class GlassDoor:
         else:
             print(Fore.RED + "\nSomething went Wrong! Please try Again!")
 
-        self._web_driver.quit()
-
+        # self._web_driver.quit()
 
     def _check_if_user_is_logged_in(self) -> None:
         while True:
@@ -95,7 +106,7 @@ class GlassDoor:
         else:
             print(Fore.YELLOW + "User is not Logged In!")
 
-            _response: str = input(Fore.YELLOW + "\nDo You Want to Log In? [Y | N]: ").lower()
+            _response: str = input(Fore.YELLOW + "\nDo You Want to LogIn? [Y | N]: ").lower()
 
             if _response.__eq__("y"):
                 self._log_user_in()
