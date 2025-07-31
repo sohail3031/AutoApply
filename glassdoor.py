@@ -101,6 +101,10 @@ class GlassDoor:
 
                 return
 
+    def _easy_apply(self) -> None:
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button"))).click()
+        self._web_driver.switch_to.window(self._web_driver.window_handles[1])
+
     def _apply_using_url(self) -> None:
         print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
 
@@ -112,6 +116,13 @@ class GlassDoor:
         self._set_up()
 
         self._web_driver.get(_url)
+
+        _apply_button_text: str = WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button/span/div"))).text
+
+        if _apply_button_text.__eq__("Easy Apply"):
+            self._easy_apply()
+        else:
+            print("Apply on Company Website")
 
     def _set_glassdoor_landing_page_url(self) -> None:
         while True:
