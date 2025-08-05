@@ -10,6 +10,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from getpass import getpass
 from selenium.common.exceptions import TimeoutException
+from plyer import notification
+from selenium.webdriver.support.ui import Select
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -22,6 +24,7 @@ class GlassDoor:
         self._glassdoor_landing_page_url: str = str()
         self._firefox_profile_path: str = str()
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
+        self._is_security_message_appeared: bool = bool()
 
     @staticmethod
     def _display_options() -> None:
@@ -79,50 +82,86 @@ class GlassDoor:
 
         self._web_driver.quit()
 
+    @staticmethod
+    def _show_notification(title="", message="", timeout=10) -> None:
+        notification.notify(title=title, message=message, app_name="AutoApply", timeout=timeout)
+
     def _check_if_user_is_logged_in(self) -> None:
         self._set_up()
         self._web_driver.get(self._glassdoor_landing_page_url)
 
-        self._check_user_login = True if self._web_driver.title.__eq__("Community | Glassdoor") else False
+        if self._web_driver.title.__eq__("Security | Glassdoor"):
+            self._show_notification(title="Unable to LogIn", message="\nA security window has popup. Please open the firefox, go to the home page of 'GlassDoor', and close and finally re-run the application again.")
+            self._web_driver.quit()
 
-        self._web_driver.quit()
-
-        if self._check_user_login:
-            print(Fore.YELLOW + "User is Logged In!")
+            self._is_security_message_appeared = True
         else:
-            print(Fore.YELLOW + "User is not Logged In!")
+            self._check_user_login = True if self._web_driver.title.__eq__("Community | Glassdoor") else False
 
-            _response: str = input(Fore.YELLOW + "\nDo You Want to LogIn? [Y | N]: ").lower()
+            self._web_driver.quit()
 
-            if _response.__eq__("y"):
-                self._log_user_in()
+            if self._check_user_login:
+                print(Fore.YELLOW + "User is Logged In!")
             else:
-                print(Fore.RED + "\nTo Apply for a Job You Must be Logged In")
+                print(Fore.YELLOW + "User is not Logged In!")
 
-                return
+                _response: str = input(Fore.YELLOW + "\nDo You Want to LogIn? [Y | N]: ").lower()
+
+                if _response.__eq__("y"):
+                    self._log_user_in()
+                else:
+                    print(Fore.RED + "\nTo Apply for a Job You Must be Logged In")
+
+                    return
+
+    def _add_or_update_your_address(self) -> None:
+        _country: str = input("Enter Country: ")
+        _postal_code: str = input("Enter Postal Code: ")
+        _city: str = input("Enter City: ")
+        _state: str = input("Enter State: ")
+        _street_address: str = input("Enter Street Address: ")
+
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
+
+        _select = Select(self._web_driver.find_element(By.ID, "location-fields-country-list"))
+
+        _select.select_by_visible_text(_country)
 
     def _easy_apply(self) -> None:
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button"))).click()
+        time.sleep(5)
         self._web_driver.switch_to.window(self._web_driver.window_handles[1])
+        time.sleep(5)
+
+        print("easy apply: " + self._web_driver.title)
+
+        if self._web_driver.title.__eq__("Just a moment..."):
+            self._show_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+        elif self._web_driver.title.__eq__("Add or update your address | Indeed"):
+            self._add_or_update_your_address()
 
     def _apply_using_url(self) -> None:
         print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
 
-        if not self._check_user_login:
-            self._check_if_user_is_logged_in()
+        # if not self._check_user_login:
+        #     self._check_if_user_is_logged_in()
 
-        _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
+        if not self._is_security_message_appeared:
+            _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
 
-        self._set_up()
+            self._set_up()
 
-        self._web_driver.get(_url)
+            self._web_driver.get(_url)
 
-        _apply_button_text: str = WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button/span/div"))).text
+            print("url: " + self._web_driver.title)
 
-        if _apply_button_text.__eq__("Easy Apply"):
-            self._easy_apply()
-        else:
-            print("Apply on Company Website")
+            _apply_button_text: str = WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button/span/div"))).text
+
+            if _apply_button_text.__eq__("Easy Apply"):
+                self._easy_apply()
+            else:
+                print("Apply on Company Website")
 
     def _set_glassdoor_landing_page_url(self) -> None:
         while True:
