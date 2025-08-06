@@ -114,8 +114,22 @@ class GlassDoor:
 
                     return
 
+    @staticmethod
+    def _get_country() -> str:
+        while True:
+            _country: str = input("Enter Country: ")
+
+            if not _country:
+                return _country
+
+            print(Fore.RED + "Invalid Input!")
+
+    @staticmethod
+    def _get_postal_code() -> str:
+        pass
+
     def _add_or_update_your_address(self) -> None:
-        _country: str = input("Enter Country: ")
+        _country: str = self._get_country()
         _postal_code: str = input("Enter Postal Code: ")
         _city: str = input("Enter City: ")
         _state: str = input("Enter State: ")
