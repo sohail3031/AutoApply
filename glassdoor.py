@@ -25,6 +25,7 @@ class GlassDoor:
         self._firefox_profile_path: str = str()
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
         self._is_security_message_appeared: bool = bool()
+        self._sleep_timeout: int = 5
 
     @staticmethod
     def _display_options() -> None:
@@ -62,6 +63,9 @@ class GlassDoor:
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserEmail"))).send_keys(_email)
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserPassword"))).send_keys(_password)
+
+        time.sleep(self._sleep_timeout)
+
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Sign in']]"))).click()
 
         try:
@@ -69,6 +73,9 @@ class GlassDoor:
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserEmail"))).send_keys(_email)
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserPassword"))).send_keys(_password)
+
+            time.sleep(self._sleep_timeout)
+
             WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button"))).click()
         except TimeoutException:
             print(Fore.RED + "\nSomething went Wrong! Please try Again!")
@@ -136,6 +143,9 @@ class GlassDoor:
         _street_address: str = input("Enter Street Address: ")
 
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
+
+        time.sleep(self._sleep_timeout)
+
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
 
         _select = Select(self._web_driver.find_element(By.ID, "location-fields-country-list"))
@@ -144,9 +154,12 @@ class GlassDoor:
 
     def _easy_apply(self) -> None:
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button"))).click()
-        time.sleep(5)
+
+        time.sleep(self._sleep_timeout)
+
         self._web_driver.switch_to.window(self._web_driver.window_handles[1])
-        time.sleep(5)
+
+        time.sleep(self._sleep_timeout)
 
         print("easy apply: " + self._web_driver.title)
 
@@ -158,8 +171,8 @@ class GlassDoor:
     def _apply_using_url(self) -> None:
         print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
 
-        # if not self._check_user_login:
-        #     self._check_if_user_is_logged_in()
+        if not self._check_user_login:
+            self._check_if_user_is_logged_in()
 
         if not self._is_security_message_appeared:
             _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
