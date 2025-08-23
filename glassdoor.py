@@ -25,8 +25,7 @@ class GlassDoor:
         self._glassdoor_landing_page_url: str = str()
         self._firefox_profile_path: str = str()
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-        # self._is_security_message_appeared: bool = bool()
-        self._sleep_timeout: int = 2
+        self._sleep_timeout: int = 4
 
     @staticmethod
     def _display_options() -> None:
@@ -144,7 +143,7 @@ class GlassDoor:
             _country: str = input("Enter Country: ")
 
             if _country:
-                return _country
+                return _country.title()
 
             print(Fore.RED + "Invalid Country!")
 
@@ -153,8 +152,8 @@ class GlassDoor:
         while True:
             _postal_code: str = input("Enter Postal Code: ")
 
-            if len(_postal_code) == 6:
-                return _postal_code
+            if len(_postal_code) == 6 or len(_postal_code) == 7:
+                return _postal_code.upper()
 
             print(Fore.RED + "Invalid Postal Code!")
 
@@ -164,7 +163,7 @@ class GlassDoor:
             _city: str = input("Enter City: ")
 
             if _city:
-                return _city
+                return _city.title()
 
             print(Fore.RED + "Invalid City Name!")
 
@@ -174,7 +173,7 @@ class GlassDoor:
             _state: str = input("Enter State: ")
 
             if _state:
-                return _state
+                return _state.title()
 
             print(Fore.RED + "Invalid State Name!")
 
@@ -184,7 +183,7 @@ class GlassDoor:
             _street_address: str = input("Enter Street Address: ")
 
             if _street_address:
-                return _street_address
+                return _street_address.title()
 
             print(Fore.RED + "Invalid Street Address!")
 
@@ -195,6 +194,7 @@ class GlassDoor:
         _state: str = self._get_state()
         _street_address: str = self._get_street_address()
 
+        # country field
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
 
         time.sleep(self._sleep_timeout)
@@ -205,8 +205,34 @@ class GlassDoor:
 
         _select.select_by_visible_text(_country)
 
+        time.sleep(self._sleep_timeout)
+
+        # postal code field
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-postal-code-input"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(_postal_code)
+
+        time.sleep(self._sleep_timeout)
+
+        # city & state field
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-locality-input"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(_city + ", " + _state)
+
+        time.sleep(self._sleep_timeout)
+
+        # street address field
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-address-input"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(_street_address)
+
+        time.sleep(self._sleep_timeout)
+
+        # continue button
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
+
     def _easy_apply(self) -> None:
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[1]/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button"))).click()
+        time.sleep(self._sleep_timeout)
+
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='easyApply']"))).click()
 
         time.sleep(self._sleep_timeout)
 
@@ -214,12 +240,24 @@ class GlassDoor:
 
         time.sleep(self._sleep_timeout)
 
-        print("easy apply: " + self._web_driver.title)
+        while True:
+            print(self._web_driver.title)
 
-        if self._web_driver.title.__eq__("Just a moment..."):
-            self._show_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
-        elif self._web_driver.title.__eq__("Add or update your address | Indeed"):
-            self._add_or_update_your_address()
+            match self._web_driver.title:
+                case "Just a moment...":
+                    self._show_notification(title="Unable to Apply for Job",
+                                            message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+
+                    sys.exit()
+                case "Add or update your address | Indeed":
+                    self._show_notification(title="Need Information", message="Please fill the details in the terminal and comeback to the automation window.")
+                    self._add_or_update_your_address()
+                case _:
+                    self._show_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
+
+                    sys.exit()
+
+            time.sleep(self._sleep_timeout)
 
     def _apply_using_url(self) -> None:
         print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
@@ -227,8 +265,8 @@ class GlassDoor:
         # if not self._check_user_login:
         #     self._check_if_user_is_logged_in()
 
-        # if not self._is_security_message_appeared:
-        _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
+        # _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
+        _url: str = "https://www.glassdoor.ca/job-listing/junior-ai-integration-engineer-full-stack-venuiti-JV_IC2280158_KO0,41_KE42,49.htm?jl=1009852238063&utm_source=jobalert&utm_medium=email&utm_content=ja-jobpos3-1009852238063&utm_campaign=jobAlertAlert&tgt=GD_JOB_VIEW&src=GD_JOB_AD&uido=2B4F8C43B4AF03F6F90033411AC61A7B&ao=1136043&jrtk=5-yul1-0-1j3achbjkiuek805-5dab5a4bf7c2a922&cs=1_7196c3be&s=224&t=JA&pos=103&ja=358098550&guid=00000198d4c2a5a48712787a4778738f&jobListingId=1009852238063&ea=1&vt=e&cb=1755916578669&ctt=1755929691044&srs=EMAIL_JOB_ALERT&gdir=1"
 
         self._set_up()
 
@@ -236,27 +274,20 @@ class GlassDoor:
 
         time.sleep(self._sleep_timeout)
 
-        # try:
-        #     WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//button[data-test='easyApply']")))
-        #
-        #     self._easy_apply()
-        # except TimeoutException:
-        #     print("Apply on Company Website")
+        if self._web_driver.title.__eq__("Just a moment..."):
+            self._show_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//button[@data-test='easyApply']")))
+        try:
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//button[@data-test='easyApply']")))
 
-        self._easy_apply()
-
-        # _apply_button_text: str = WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[4]/div[4]/div/div[2]/div/div[1]/header/div[1]/div[2]/div[2]/div/div/button/span/div"))).text
-        #
-        # if _apply_button_text.__eq__("Easy Apply"):
-        #     self._easy_apply()
-        # else:
-        #     print("Apply on Company Website")
+            self._easy_apply()
+        except TimeoutException:
+            print("Apply on Company Website")
 
     def _set_glassdoor_landing_page_url(self) -> None:
         while True:
-            self._glassdoor_landing_page_url = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
+            # self._glassdoor_landing_page_url = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
+            self._glassdoor_landing_page_url = "https://www.glassdoor.ca/index.htm"
 
             if "glassdoor" in self._glassdoor_landing_page_url:
                 break
@@ -265,7 +296,8 @@ class GlassDoor:
 
     def _set_firefox_profile_path(self) -> None:
         while True:
-            self._firefox_profile_path = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
+            # self._firefox_profile_path = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
+            self._firefox_profile_path = r"C:\Users\SOHAIL\AppData\Roaming\Mozilla\Firefox\Profiles\ds6fadtr.default-release"
             _pattern: re = re.compile(self._firefox_profile_path_pattern, re.IGNORECASE)
 
             if _pattern.match(self._firefox_profile_path):
