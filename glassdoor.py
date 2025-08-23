@@ -1,6 +1,8 @@
 import re
 import time
 import sys
+import pycountry
+import os
 
 from colorama import init, Fore
 from selenium.webdriver.firefox.options import Options
@@ -26,6 +28,7 @@ class GlassDoor:
         self._firefox_profile_path: str = str()
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
         self._sleep_timeout: int = 4
+        self._resume_path: str = str()
 
     @staticmethod
     def _display_options() -> None:
@@ -140,19 +143,22 @@ class GlassDoor:
     @staticmethod
     def _get_country() -> str:
         while True:
-            _country: str = input("Enter Country: ")
+            # _country: str = input("Enter Country: ")
+            _country: str = "Canada"
 
-            if _country:
-                return _country.title()
-
-            print(Fore.RED + "Invalid Country!")
+            try:
+                if pycountry.countries.lookup(_country) is not None:
+                    return _country.title()
+            except LookupError:
+                print(Fore.RED + "Invalid Country!")
 
     @staticmethod
     def _get_postal_code() -> str:
         while True:
-            _postal_code: str = input("Enter Postal Code: ")
+            # _postal_code: str = input("Enter Postal Code: ")
+            _postal_code: str = "N2H OB7"
 
-            if len(_postal_code) == 6 or len(_postal_code) == 7:
+            if len(_postal_code) in range(4, 8):
                 return _postal_code.upper()
 
             print(Fore.RED + "Invalid Postal Code!")
@@ -160,7 +166,8 @@ class GlassDoor:
     @staticmethod
     def _get_city() -> str:
         while True:
-            _city: str = input("Enter City: ")
+            # _city: str = input("Enter City: ")
+            _city: str = "Kitchener"
 
             if _city:
                 return _city.title()
@@ -170,7 +177,8 @@ class GlassDoor:
     @staticmethod
     def _get_state() -> str:
         while True:
-            _state: str = input("Enter State: ")
+            # _state: str = input("Enter State: ")
+            _state: str = "Ontario"
 
             if _state:
                 return _state.title()
@@ -180,7 +188,8 @@ class GlassDoor:
     @staticmethod
     def _get_street_address() -> str:
         while True:
-            _street_address: str = input("Enter Street Address: ")
+            # _street_address: str = input("Enter Street Address: ")
+            _street_address: str = "85 Duke Street West"
 
             if _street_address:
                 return _street_address.title()
@@ -229,13 +238,30 @@ class GlassDoor:
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
+    def _set_resume_path(self) -> None:
+        while True:
+            self._resume_path = input(Fore.BLUE + "Enter the Resume Path: ")
+
+            if os.path.isfile(self._resume_path):
+                if ".pdf" in self._resume_path or ".docx" in self._resume_path:
+                    break
+                else:
+                    print(Fore.RED + "Incorrect File Format")
+            else:
+                print(Fore.RED + "File Not Found!")
+
+    def _upload_a_resume_for_this_application(self) -> None:
+        self._set_resume_path()
+
     def _easy_apply(self) -> None:
         time.sleep(self._sleep_timeout)
 
+        # click on easy apply button
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='easyApply']"))).click()
 
         time.sleep(self._sleep_timeout)
 
+        # switch to a new browser tab
         self._web_driver.switch_to.window(self._web_driver.window_handles[1])
 
         time.sleep(self._sleep_timeout)
@@ -245,16 +271,15 @@ class GlassDoor:
 
             match self._web_driver.title:
                 case "Just a moment...":
-                    self._show_notification(title="Unable to Apply for Job",
-                                            message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
-
+                    self._show_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                     sys.exit()
                 case "Add or update your address | Indeed":
                     self._show_notification(title="Need Information", message="Please fill the details in the terminal and comeback to the automation window.")
                     self._add_or_update_your_address()
+                case "Upload a resume for this application | Indeed":
+                    self._upload_a_resume_for_this_application()
                 case _:
                     self._show_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
-
                     sys.exit()
 
             time.sleep(self._sleep_timeout)
