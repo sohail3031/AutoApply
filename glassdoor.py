@@ -38,6 +38,7 @@ class GlassDoor:
         self._street_address: str = str()
         self._past_job_title: str = str()
         self._past_job_company: str = str()
+        self._past_experience: int = int()
 
     @staticmethod
     def _display_options() -> None:
@@ -212,17 +213,32 @@ class GlassDoor:
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.CSS_SELECTOR, ".aac0a2873947e840f419e51db0fc4dbf6.a7df1b2535603e486cb9d8f3e1cd3068e.css-q81v3z.e8ju0x50"))
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".aac0a2873947e840f419e51db0fc4dbf6.a7df1b2535603e486cb9d8f3e1cd3068e.css-q81v3z.e8ju0x50"))).click()
 
-    def add_relevant_work_experience_information(self) -> None:
+    def _add_relevant_work_experience_information(self) -> None:
         """ Method to Add Relevant Work Experience """
         time.sleep(self._sleep_timeout)
 
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self._past_job_title)
+        pyautogui.moveTo(300, 300)
+        pyautogui.click()
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self._past_job_company)
+        pyautogui.moveTo(300, 300)
+        pyautogui.click()
 
         time.sleep(self._sleep_timeout)
 
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
+
+    def _answer_screener_questions_from_the_employer(self) -> None:
+        """ Method to Answer the Additional Questions from the Employer """
+        time.sleep(self._sleep_timeout)
+
+        text_inputs = self._web_driver.find_elements(By.XPATH, "//input[@type='text']")
+
+        for input_field in text_inputs:
+            field_id = input_field.get_attribute("id")
+
+            self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, field_id))
 
     def _easy_apply(self) -> None:
         time.sleep(self._sleep_timeout)
@@ -250,7 +266,9 @@ class GlassDoor:
             elif "Upload a resume for this application" in _title:
                 self._upload_a_resume_for_this_application()
             elif "Add relevant work experience information" in _title:
-                self.add_relevant_work_experience_information()
+                self._add_relevant_work_experience_information()
+            elif "Answer Screener Questions from the employer":
+                self._answer_screener_questions_from_the_employer()
             else:
                 self._show_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
                 sys.exit()
@@ -404,6 +422,18 @@ class GlassDoor:
 
             print(Fore.RED + "Invalid Past Company Name!")
 
+    def _set_past_experience(self) -> None:
+        """ Read Experience Years """
+        while True:
+            try:
+                # self._past_experience = int(input(Fore.BLUE + "Enter Experience: "))
+                self._past_experience = 3
+                
+                if self._past_experience:
+                    break
+            except ValueError:
+                print(Fore.RED + "Invalid Input! PLease Enter a Number!")
+
     def _read_user_inputs(self) -> None:
         self._set_glassdoor_landing_page_url()
         self._set_firefox_profile_path()
@@ -415,6 +445,7 @@ class GlassDoor:
         self._set_street_address()
         self._set_past_job_title()
         self._set_past_job_company()
+        self._set_past_experience()
 
     def main(self) -> None:
         self._read_user_inputs()
