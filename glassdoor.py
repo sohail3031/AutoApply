@@ -3,6 +3,8 @@ import time
 import sys
 import pycountry
 import os
+import pyperclip
+import pyautogui
 
 from colorama import init, Fore
 from selenium.webdriver.firefox.options import Options
@@ -29,6 +31,11 @@ class GlassDoor:
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
         self._sleep_timeout: int = 4
         self._resume_path: str = str()
+        self._country: str = str()
+        self._postal_code: str = str()
+        self._city: str = str()
+        self._state: str = str()
+        self._street_address: str = str()
 
     @staticmethod
     def _display_options() -> None:
@@ -141,51 +148,6 @@ class GlassDoor:
                     return
 
     @staticmethod
-    def _get_country() -> str:
-        while True:
-            # _country: str = input("Enter Country: ")
-            _country: str = "Canada"
-
-            try:
-                if pycountry.countries.lookup(_country) is not None:
-                    return _country.title()
-            except LookupError:
-                print(Fore.RED + "Invalid Country!")
-
-    @staticmethod
-    def _get_postal_code() -> str:
-        while True:
-            # _postal_code: str = input("Enter Postal Code: ")
-            _postal_code: str = "N2H OB7"
-
-            if len(_postal_code) in range(4, 8):
-                return _postal_code.upper()
-
-            print(Fore.RED + "Invalid Postal Code!")
-
-    @staticmethod
-    def _get_city() -> str:
-        while True:
-            # _city: str = input("Enter City: ")
-            _city: str = "Kitchener"
-
-            if _city:
-                return _city.title()
-
-            print(Fore.RED + "Invalid City Name!")
-
-    @staticmethod
-    def _get_state() -> str:
-        while True:
-            # _state: str = input("Enter State: ")
-            _state: str = "Ontario"
-
-            if _state:
-                return _state.title()
-
-            print(Fore.RED + "Invalid State Name!")
-
-    @staticmethod
     def _get_street_address() -> str:
         while True:
             # _street_address: str = input("Enter Street Address: ")
@@ -197,61 +159,63 @@ class GlassDoor:
             print(Fore.RED + "Invalid Street Address!")
 
     def _add_or_update_your_address(self) -> None:
-        _country: str = self._get_country()
-        _postal_code: str = self._get_postal_code()
-        _city: str = self._get_city()
-        _state: str = self._get_state()
         _street_address: str = self._get_street_address()
 
         # country field
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
 
-        time.sleep(self._sleep_timeout)
+        # time.sleep(self._sleep_timeout)
 
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
 
         _select = Select(self._web_driver.find_element(By.ID, "location-fields-country-list"))
 
-        _select.select_by_visible_text(_country)
+        _select.select_by_visible_text(self._country)
 
-        time.sleep(self._sleep_timeout)
+        # time.sleep(self._sleep_timeout)
 
         # postal code field
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-postal-code-input"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(_postal_code)
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self._postal_code)
 
-        time.sleep(self._sleep_timeout)
+        # time.sleep(self._sleep_timeout)
 
         # city & state field
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-locality-input"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(_city + ", " + _state)
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(self._city + ", " + self._state)
 
-        time.sleep(self._sleep_timeout)
+        # time.sleep(self._sleep_timeout)
 
         # street address field
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, "location-fields-address-input"))
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(_street_address)
 
-        time.sleep(self._sleep_timeout)
+        # time.sleep(self._sleep_timeout)
 
         # continue button
         self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
-    def _set_resume_path(self) -> None:
-        while True:
-            self._resume_path = input(Fore.BLUE + "Enter the Resume Path: ")
-
-            if os.path.isfile(self._resume_path):
-                if ".pdf" in self._resume_path or ".docx" in self._resume_path:
-                    break
-                else:
-                    print(Fore.RED + "Incorrect File Format")
-            else:
-                print(Fore.RED + "File Not Found!")
-
     def _upload_a_resume_for_this_application(self) -> None:
-        self._set_resume_path()
+        time.sleep(self._sleep_timeout)
+
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
+
+        time.sleep(self._sleep_timeout)
+
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))).click()
+
+        time.sleep(self._sleep_timeout)
+
+        pyperclip.copy(self._resume_path)
+        pyautogui.hotkey("ctrl", "v")
+        pyautogui.press("enter")
+
+        time.sleep(self._sleep_timeout)
+
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.CSS_SELECTOR, ".aac0a2873947e840f419e51db0fc4dbf6.a7df1b2535603e486cb9d8f3e1cd3068e.css-q81v3z.e8ju0x50"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".aac0a2873947e840f419e51db0fc4dbf6.a7df1b2535603e486cb9d8f3e1cd3068e.css-q81v3z.e8ju0x50"))).click()
 
     def _easy_apply(self) -> None:
         time.sleep(self._sleep_timeout)
@@ -330,9 +294,68 @@ class GlassDoor:
             else:
                 print(Fore.RED + "Invalid Profile Path!")
 
+    def _set_resume_path(self) -> None:
+        while True:
+            # self._resume_path = input(Fore.BLUE + "Enter the Resume Path: ")
+            self._resume_path = r"C:\Users\SOHAIL\OneDrive\Desktop\Automation Resume\Full Stack\Mohammed Sohail Ahmed - Resume.pdf"
+
+            if os.path.isfile(self._resume_path):
+                if ".pdf" in self._resume_path or ".docx" in self._resume_path:
+                    break
+                else:
+                    print(Fore.RED + "Incorrect File Format")
+            else:
+                print(Fore.RED + "File Not Found!")
+
+    def _set_country(self) -> None:
+        while True:
+            # self._country: str = input("Enter Country: ")
+            self._country: str = "Canada"
+
+            try:
+                if pycountry.countries.lookup(self._country) is not None:
+                    self._country.title()
+            except LookupError:
+                print(Fore.RED + "Invalid Country!")
+
+    def _set_postal_code(self) -> None:
+        while True:
+            # self._postal_code: str = input("Enter Postal Code: ")
+            self._postal_code: str = "N2H OB7"
+
+            if len(self._postal_code) in range(4, 8):
+                self._postal_code.upper()
+
+            print(Fore.RED + "Invalid Postal Code!")
+
+    def _set_city(self) -> None:
+        while True:
+            # self._city: str = input("Enter City: ")
+            self._city: str = "Kitchener"
+
+            if self._city:
+                self._city.title()
+
+            print(Fore.RED + "Invalid City Name!")
+
+    def _set_state(self) -> None:
+        while True:
+            # self._state: str = input("Enter State: ")
+            self._state: str = "Ontario"
+
+            if self._state:
+                self._state.title()
+
+            print(Fore.RED + "Invalid State Name!")
+
     def main(self) -> None:
         self._set_glassdoor_landing_page_url()
         self._set_firefox_profile_path()
+        self._set_resume_path()
+        self._set_country()
+        self._set_postal_code()
+        self._set_city()
+        self._set_state()
 
         while True:
             self._display_options()
