@@ -39,6 +39,10 @@ class GlassDoor:
         self._past_job_title: str = str()
         self._past_job_company: str = str()
         self._past_experience: int = int()
+        self._commute_to_work: str = str()
+        self._first_name: str = str()
+        self._last_name: str = str()
+        self._phone_number: str = str()
 
     @staticmethod
     def _display_options() -> None:
@@ -239,6 +243,41 @@ class GlassDoor:
             field_id = input_field.get_attribute("id")
 
             self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, field_id))
+            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, field_id))).send_keys(str(self._past_experience))
+
+            time.sleep(self._sleep_timeout)
+
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviout: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, f"//span[text()='{self._commute_to_work}']"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{self._commute_to_work}']"))).click()
+
+        time.sleep(self._sleep_timeout)
+
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
+
+    def _review_the_contents_of_this_job_application(self) -> None:
+        """ Method to Review the Content """
+        time.sleep(self._sleep_timeout)
+
+        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']")))
+
+    def _add_or_update_your_contact_information(self) -> None:
+        """ Method to Update Contact Information """
+        time.sleep(self._sleep_timeout)
+
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "ifl-InputFormField-:rn:"))).send_keys(self._first_name)
+
+        time.sleep(self._sleep_timeout)
+
+        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "ifl-InputFormField-:rs:"))).send_keys(self._last_name)
+
+        time.sleep(self._sleep_timeout)
+
+        self._web_driver.find_element(By.XPATH, "//button[@aria-labelledby='hidden-country-select-label-:r14:']").click()
+
+
+
 
     def _easy_apply(self) -> None:
         time.sleep(self._sleep_timeout)
@@ -267,8 +306,13 @@ class GlassDoor:
                 self._upload_a_resume_for_this_application()
             elif "Add relevant work experience information" in _title:
                 self._add_relevant_work_experience_information()
-            elif "Answer Screener Questions from the employer":
+            elif "Answer Screener Questions from the employer" in _title:
                 self._answer_screener_questions_from_the_employer()
+            elif "Review the contents of this job application" in _title:
+                self._review_the_contents_of_this_job_application()
+                self._show_notification(title="Success", message="Applied to Job Successfully")
+            elif "Add or update your contact information" in _title:
+                self._add_or_update_your_contact_information()
             else:
                 self._show_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
                 sys.exit()
@@ -434,10 +478,77 @@ class GlassDoor:
             except ValueError:
                 print(Fore.RED + "Invalid Input! PLease Enter a Number!")
 
+    @staticmethod
+    def _display_commute_to_work_options() -> None:
+        """ Method to Display Commute to Work Options """
+        print(Fore.MAGENTA + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
+        print(Fore.MAGENTA + "1. Yes, I can make the commute")
+        print(Fore.MAGENTA + "2. Yes, I am planning to relocate")
+        print(Fore.MAGENTA + "3. Yes, but I need relocation assistance")
+        print(Fore.MAGENTA + "4. No")
+
+    def _set_commute_to_work(self) -> None:
+        while True:
+            self._display_commute_to_work_options()
+
+            try:
+                # option: int = int(input(Fore.BLUE + "Select Commute to Work Option: "))
+                option: int = 1
+
+                match option:
+                    case 1:
+                        self._commute_to_work = "Yes, I can make the commute"
+
+                        break
+                    case 2:
+                        self._commute_to_work = "Yes, I am planning to relocate"
+
+                        break
+                    case 3:
+                        self._commute_to_work = "Yes, but I need relocation assistance"
+
+                        break
+                    case 4:
+                        self._commute_to_work = "No"
+
+                print(Fore.RED + "Invalid Input! The Number Should be in Between 1 & 4")
+            except ValueError:
+                print(Fore.RED + "Invalid Input! Please Enter a Number")
+
+    def _set_first_name(self) -> None:
+        while True:
+            self._first_name = input(Fore.BLUE + "Enter First Name: ")
+
+            if self._first_name:
+                break
+
+            print(Fore.RED + "Invalid Input! Plase Enter a Valid First Name!")
+
+    def _set_last_name(self) -> None:
+        while True:
+            self._last_name = input(Fore.BLUE + "Enter Last Name: ")
+
+            if self._last_name:
+                break
+
+            print(Fore.RED + "Invalid Input! Plase Enter a Valid Last Name!")
+
+    def _set_phone_number(self) -> None:
+        while True:
+            self._first_name = input(Fore.BLUE + "Enter First Name: ")
+
+            if self._phone_number:
+                break
+
+            print(Fore.RED + "Invalid Input! Plase Enter a Valid hone Number!")
+
     def _read_user_inputs(self) -> None:
         self._set_glassdoor_landing_page_url()
         self._set_firefox_profile_path()
         self._set_resume_path()
+        self._set_first_name()
+        self._set_last_name()
+        self._set_phone_number()
         self._set_country()
         self._set_postal_code()
         self._set_city()
@@ -446,6 +557,7 @@ class GlassDoor:
         self._set_past_job_title()
         self._set_past_job_company()
         self._set_past_experience()
+        self._set_commute_to_work()
 
     def main(self) -> None:
         self._read_user_inputs()
