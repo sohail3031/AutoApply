@@ -17,15 +17,45 @@ from getpass import getpass
 from selenium.common.exceptions import TimeoutException
 from plyer import notification
 from selenium.webdriver.support.ui import Select
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Optional, AnyStr
 
-class UserProfile:
+
+@dataclass
+class Config:
+    """ configuration data """
+    WEB_DRIVER: Optional[Firefox] = None
+    EMAIL_PATTERN: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+    WEB_DRIVER_TIMEOUT: int = 10
+    GLASSDOOR_LANDING_PAGE: str = str()
+    FIREFOX_PROFILE_PATH: str = str()
+    FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
+    SLEEP_TIMEOUT: int = 4
+    RESUME_PATH: str = str()
+
+@dataclass
+class JobHistory:
+    """ previous job data """
+    title: str = str()
+    company: str = str()
+    experience: int = int()
+
+@dataclass
+class Address:
+    """ user address """
+    street_address: str = str()
+    state: str = str()
+    city: str = str()
+    postal_code: str = str()
+
+@dataclass
+class User:
+    """ user data """
     first_name: str = str()
     last_name: str = str()
     phone_number: str = str()
-
-class JobHistory:
-    commute_to_work: int = int()
+    address: Address = field(default_factory=Address)
+    past_job: JobHistory = field(default_factory=JobHistory)
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -56,9 +86,11 @@ class GlassDoor:
     @staticmethod
     def _display_options() -> None:
         print(Fore.GREEN + "\n***** GlassDoor Job Application *****")
-        print(Fore.MAGENTA + "\n0. Exit"
-              "\n1. Apply Using URL"
-              "\n2. Apply with Job Search")
+
+        options: list[str] = ["Exit", "Apply Using URL", "Apply with Job Search"]
+
+        for index, value in enumerate(options):
+            print(Fore.MAGENTA + f"{index}. {value}")
 
     def _set_up(self) -> None:
         _options: Options = Options()
@@ -369,7 +401,8 @@ class GlassDoor:
         #     print(e.stacktrace)
             # print("Apply on Company Website")
 
-    def _set_glassdoor_landing_page_url(self) -> None:
+    def _read_glassdoor_landing_page_url(self) -> None:
+        """ read the 'GlassDoor' url """
         while True:
             # self._glassdoor_landing_page_url = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
             self._glassdoor_landing_page_url = "https://www.glassdoor.ca/index.htm"
@@ -565,40 +598,76 @@ class GlassDoor:
 
             print(Fore.RED + "Invalid Input! Plase Enter a Valid hone Number!")
 
-    def _read_user_inputs(self) -> None:
-        self._set_glassdoor_landing_page_url()
-        self._set_firefox_profile_path()
-        self._set_resume_path()
-        self._set_first_name()
-        self._set_last_name()
-        self._set_phone_number()
-        self._set_country()
-        self._set_postal_code()
-        self._set_city()
-        self._set_state()
-        self._set_street_address()
-        self._set_past_job_title()
-        self._set_past_job_company()
-        self._set_past_experience()
-        self._set_commute_to_work()
+    def _collect_user_inputs(self) -> None:
+        """ collect all user inputs """
+        input_methods: dict = {
+            "GlasDoor URL": self._read_glassdoor_landing_page_url,
+            # "Firefox Profile Path": self._read_firefox_profile_path,
+            # "Resume Path": self._read_resume_path,
+            # "First Name": self._read_first_name,
+            # "Last Name": self._read_last_name,
+            # "Phone Number": self._read_phone_number,
+            # "Country": self._read_country,
+            # "Postal Code": self._read_postal_code,
+            # "City": self._read_city,
+            # "State": self._read_state,
+            # "Address": self._read_street_address,
+            # "Past Job Title": self._read_past_job_title,
+            # "Past Job Company": self._read_past_job_company,
+            # "Commute Preferences": self._read_commute_to_work
+        }
+
+        for label, method in input_methods.items():
+            print(Fore.YELLOW + f"Setting {label} ...")
+
+            method()
+
+        # self._set_glassdoor_landing_page_url()
+        # self._set_firefox_profile_path()
+        # self._set_resume_path()
+        # self._set_first_name()
+        # self._set_last_name()
+        # self._set_phone_number()
+        # self._set_country()
+        # self._set_postal_code()
+        # self._set_city()
+        # self._set_state()
+        # self._set_street_address()
+        # self._set_past_job_title()
+        # self._set_past_job_company()
+        # self._set_past_experience()
+        # self._set_commute_to_work()
+
+    @staticmethod
+    def _read_user_choice() -> int:
+        """ read user choice for menu options """
+        try:
+            return int(input(Fore.BLUE + "\nEnter your option: "))
+        except ValueError:
+            print(Fore.RED + "Invalid Input! Please Enter a Number!")
+
+            return -1
+
+    def _handle_choice(self, choice) -> None:
+        """ handle menu choice from user """
+        match choice:
+            case 1:
+                self._apply_using_url()
+            case _:
+                print(Fore.RED + "Invalid Input!")
 
     def main(self) -> None:
-        self._read_user_inputs()
+        """ main method """
+        self._collect_user_inputs()
 
         while True:
             self._display_options()
 
-            try:
-                _user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
+            choice: int = self._read_user_choice()
 
-                match _user_input:
-                    case 0:
-                        print(Fore.YELLOW + "\nExited from GlassDoor Job Applications")
+            if choice == 0:
+                print(Fore.YELLOW + "\nExited from GlassDoor Job Applications")
 
-                        break
-                    case 1:
-                        self._apply_using_url()
-                    case _:
-                        print(Fore.RED + "Invalid Input!")
-            except ValueError:
-                print(Fore.RED + "Invalid Input! Please Enter a Number!")
+                break
+
+            self._handle_choice(choice=choice)
