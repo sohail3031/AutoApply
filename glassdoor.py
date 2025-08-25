@@ -65,7 +65,7 @@ class GlassDoor:
         self._web_driver: Firefox = None
         self._email_pattern: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         self._web_driver_timeout: int = 10
-        self._glassdoor_landing_page_url: str = str()
+        self._glassdoor_url: str = str()
         self._firefox_profile_path: str = str()
         self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
         self._sleep_timeout: int = 4
@@ -82,6 +82,7 @@ class GlassDoor:
         self._first_name: str = str()
         self._last_name: str = str()
         self._phone_number: str = str()
+        self.config: Config = Config()
 
     @staticmethod
     def _display_options() -> None:
@@ -127,7 +128,7 @@ class GlassDoor:
         _password: str = self._get_password()
 
         self._set_up()
-        self._web_driver.get(self._glassdoor_landing_page_url)
+        self._web_driver.get(self._glassdoor_url)
 
         time.sleep(self._sleep_timeout)
 
@@ -166,7 +167,7 @@ class GlassDoor:
 
     def _check_if_user_is_logged_in(self) -> None:
         self._set_up()
-        self._web_driver.get(self._glassdoor_landing_page_url)
+        self._web_driver.get(self._glassdoor_url)
 
         time.sleep(self._sleep_timeout)
 
@@ -401,40 +402,39 @@ class GlassDoor:
         #     print(e.stacktrace)
             # print("Apply on Company Website")
 
-    def _read_glassdoor_landing_page_url(self) -> None:
-        """ read the 'GlassDoor' url """
+    def _read_glassdoor_url(self) -> None:
+        """ read the 'GlassDoor' url & validate it """
         while True:
-            # self._glassdoor_landing_page_url = input(Fore.BLUE + "\nEnter the GlassDoor URL: ")
-            self._glassdoor_landing_page_url = "https://www.glassdoor.ca/index.htm"
+            self.config.GLASSDOOR_LANDING_PAGE = input(Fore.BLUE + "Enter the GlassDoor URL: ")
 
-            if "glassdoor" in self._glassdoor_landing_page_url:
+            if self.config.GLASSDOOR_LANDING_PAGE.startswith("http") and self.config.GLASSDOOR_LANDING_PAGE.__contains__("glassdoor"):
                 break
-            else:
-                print(Fore.RED + "Invalid URL!")
+            
+            print(Fore.RED + "Invalid URL! Please enter a valid Glassdoor URL.")
 
-    def _set_firefox_profile_path(self) -> None:
+    def _read_firefox_profile_path(self) -> None:
+        """ read 'Firefox' profile path & validate """
         while True:
-            # self._firefox_profile_path = input(Fore.BLUE + "\nEnter the Profile Path of Firefox: ")
-            self._firefox_profile_path = r"C:\Users\SOHAIL\AppData\Roaming\Mozilla\Firefox\Profiles\ds6fadtr.default-release"
-            _pattern: re = re.compile(self._firefox_profile_path_pattern, re.IGNORECASE)
+            self.config.FIREFOX_PROFILE_PATH = input(Fore.BLUE + "Enter the Profile Path of Firefox: ")
+            pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
 
-            if _pattern.match(self._firefox_profile_path):
+            if pattern.match(self.config.FIREFOX_PROFILE_PATH):
                 break
-            else:
-                print(Fore.RED + "Invalid Profile Path!")
 
-    def _set_resume_path(self) -> None:
+            print(Fore.RED + "Invalid Profile Path! Please enter a valid Firefox profile directory.")
+
+    def _read_resume_path(self) -> None:
+        """ read 'Resume' path & validate """
         while True:
-            # self._resume_path = input(Fore.BLUE + "Enter the Resume Path: ")
-            self._resume_path = r"C:\Users\SOHAIL\OneDrive\Desktop\Automation Resume\Full Stack\Mohammed Sohail Ahmed - Resume.pdf"
+            self.config.RESUME_PATH = input(Fore.BLUE + "Enter the Resume Path: ")
 
-            if os.path.isfile(self._resume_path):
-                if ".pdf" in self._resume_path or ".docx" in self._resume_path:
+            if os.path.isfile(self.config.RESUME_PATH):
+                if ".pdf" in self.config.RESUME_PATH or ".docx" in self.config.RESUME_PATH:
                     break
-                else:
-                    print(Fore.RED + "Incorrect File Format")
-            else:
-                print(Fore.RED + "File Not Found!")
+
+                print(Fore.RED + "Incorrect File Format! File must exist and be .pdf or .docx")
+
+            print(Fore.RED + "File Not Found! Please enter a valid Resume directory.")
 
     def _set_country(self) -> None:
         while True:
@@ -601,9 +601,9 @@ class GlassDoor:
     def _collect_user_inputs(self) -> None:
         """ collect all user inputs """
         input_methods: dict = {
-            "GlasDoor URL": self._read_glassdoor_landing_page_url,
-            # "Firefox Profile Path": self._read_firefox_profile_path,
-            # "Resume Path": self._read_resume_path,
+            "GlasDoor URL": self._read_glassdoor_url,
+            "Firefox Profile Path": self._read_firefox_profile_path,
+            "Resume Path": self._read_resume_path,
             # "First Name": self._read_first_name,
             # "Last Name": self._read_last_name,
             # "Phone Number": self._read_phone_number,
@@ -618,13 +618,10 @@ class GlassDoor:
         }
 
         for label, method in input_methods.items():
-            print(Fore.YELLOW + f"Setting {label} ...")
+            print(Fore.YELLOW + f"\nSetting {label} ...")
 
             method()
 
-        # self._set_glassdoor_landing_page_url()
-        # self._set_firefox_profile_path()
-        # self._set_resume_path()
         # self._set_first_name()
         # self._set_last_name()
         # self._set_phone_number()
