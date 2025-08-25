@@ -5,8 +5,10 @@ import pycountry
 import os
 import pyperclip
 import pyautogui
+import phonenumbers
 
 from colorama import init, Fore
+from phonenumbers.phonenumberutil import NumberParseException
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver import Firefox
@@ -47,6 +49,7 @@ class Address:
     state: str = str()
     city: str = str()
     postal_code: str = str()
+    country: str = str()
 
 @dataclass
 class User:
@@ -83,6 +86,7 @@ class GlassDoor:
         self._last_name: str = str()
         self._phone_number: str = str()
         self.config: Config = Config()
+        self.user: User = User()
 
     @staticmethod
     def _display_options() -> None:
@@ -436,18 +440,20 @@ class GlassDoor:
 
             print(Fore.RED + "File Not Found! Please enter a valid Resume directory.")
 
-    def _set_country(self) -> None:
+    def _read_country(self) -> None:
+        """ read 'Country' & validate """
         while True:
-            # self._country: str = input("Enter Country: ")
-            self._country: str = "Canada"
+            self.user.address.country = input(Fore.BLUE + "Enter Country: ")
 
             try:
-                if pycountry.countries.lookup(self._country) is not None:
-                    self._country.title()
+                if pycountry.countries.lookup(self.user.address.country) is not None:
+                    self.user.address.country.title()
 
                     break
             except LookupError:
-                print(Fore.RED + "Invalid Country!")
+                print(Fore.RED + "Can't Validate Country! Please try Again")
+
+            print(Fore.RED + "Invalid Input! Please Enter a Valid Country Name!")
 
     def _set_postal_code(self) -> None:
         while True:
@@ -571,32 +577,39 @@ class GlassDoor:
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please Enter a Number")
 
-    def _set_first_name(self) -> None:
+    def _read_first_name(self) -> None:
+        """ read 'First' name and validate """
         while True:
-            self._first_name = input(Fore.BLUE + "Enter First Name: ")
+            self.user.first_name = input(Fore.BLUE + "Enter First Name: ")
 
-            if self._first_name:
+            if bool(self.user.first_name) and self.user.first_name.isalpha():
                 break
 
             print(Fore.RED + "Invalid Input! Plase Enter a Valid First Name!")
 
-    def _set_last_name(self) -> None:
+    def _read_last_name(self) -> None:
+        """ read 'Last' name and validate """
         while True:
-            self._last_name = input(Fore.BLUE + "Enter Last Name: ")
+            self.user.last_name = input(Fore.BLUE + "Enter Last Name: ")
 
-            if self._last_name:
+            if bool(self.user.last_name) and self.user.last_name.isalpha():
                 break
 
             print(Fore.RED + "Invalid Input! Plase Enter a Valid Last Name!")
 
-    def _set_phone_number(self) -> None:
+    def _read_phone_number(self) -> None:
+        """ read 'Phone' number and validate """
         while True:
-            self._first_name = input(Fore.BLUE + "Enter First Name: ")
+            self.user.phone_number = input(Fore.BLUE + "Enter Phone Number: ")
+            region = pycountry.countries.lookup(self.user.address.country).alpha_2
 
-            if self._phone_number:
-                break
+            try:
+                if phonenumbers.is_valid_number(phonenumbers.parse(self.user.phone_number, region)):
+                    break
+            except NumberParseException:
+                pass
 
-            print(Fore.RED + "Invalid Input! Plase Enter a Valid hone Number!")
+            print(Fore.RED + "Invalid Input! Plase Enter a Valid Phone Number!")
 
     def _collect_user_inputs(self) -> None:
         """ collect all user inputs """
@@ -604,10 +617,10 @@ class GlassDoor:
             "GlasDoor URL": self._read_glassdoor_url,
             "Firefox Profile Path": self._read_firefox_profile_path,
             "Resume Path": self._read_resume_path,
-            # "First Name": self._read_first_name,
-            # "Last Name": self._read_last_name,
-            # "Phone Number": self._read_phone_number,
-            # "Country": self._read_country,
+            "First Name": self._read_first_name,
+            "Last Name": self._read_last_name,
+            "Country": self._read_country,
+            "Phone Number": self._read_phone_number,
             # "Postal Code": self._read_postal_code,
             # "City": self._read_city,
             # "State": self._read_state,
@@ -622,9 +635,6 @@ class GlassDoor:
 
             method()
 
-        # self._set_first_name()
-        # self._set_last_name()
-        # self._set_phone_number()
         # self._set_country()
         # self._set_postal_code()
         # self._set_city()
