@@ -21,12 +21,12 @@ from plyer import notification
 from selenium.webdriver.support.ui import Select
 from dataclasses import dataclass, field
 from typing import Optional, AnyStr
+from pathlib import Path
 
 
 @dataclass
 class Config:
     """ configuration data """
-    WEB_DRIVER: Optional[Firefox] = None
     EMAIL_PATTERN: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
     WEB_DRIVER_TIMEOUT: int = 10
     GLASSDOOR_LANDING_PAGE: str = str()
@@ -35,6 +35,13 @@ class Config:
     SLEEP_TIMEOUT: int = 4
     RESUME_PATH: str = str()
     POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
+    FIREFOX_DRIVER_PATH = "geckodriver-v0.36.0-win64/geckodriver.exe"
+    COMMUTE_OPTIONS: dict = field(default_factory=lambda : {
+        1: "Yes, I can make the commute",
+        2: "Yes, I am planning to relocate",
+        3: "Yes, but I need relocation assistance",
+        4: "No"
+    })
 
 @dataclass
 class JobHistory:
@@ -42,6 +49,7 @@ class JobHistory:
     title: str = str()
     company: str = str()
     experience: int = int()
+    commute: str = str()
 
 @dataclass
 class Address:
@@ -66,7 +74,7 @@ class GlassDoor:
         init(autoreset=True)
 
         self._check_user_login: bool = bool()
-        self._web_driver: Firefox = None
+        self.web_driver: Optional[Firefox] = None
         self._email_pattern: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
         self._web_driver_timeout: int = 10
         self._glassdoor_url: str = str()
@@ -90,7 +98,8 @@ class GlassDoor:
         self.user: User = User()
 
     @staticmethod
-    def _display_options() -> None:
+    def _show_options() -> None:
+        """ display different options to apply a job """
         print(Fore.GREEN + "\n***** GlassDoor Job Application *****")
 
         options: list[str] = ["Exit", "Apply Using URL", "Apply with Job Search"]
@@ -98,15 +107,22 @@ class GlassDoor:
         for index, value in enumerate(options):
             print(Fore.MAGENTA + f"{index}. {value}")
 
-    def _set_up(self) -> None:
-        _options: Options = Options()
+    def _initialize_web_driver(self) -> None:
+        """ Initialize Firefox web driver """
+        # Configure Firefox options
+        options: Options = Options()
+        options.set_preference("profile", self.config.FIREFOX_PROFILE_PATH)
+        options.add_argument("-profile")
+        options.add_argument(self.config.FIREFOX_PROFILE_PATH)
 
-        _options.set_preference("profile", self._firefox_profile_path)
-        _options.add_argument("-profile")
-        _options.add_argument(self._firefox_profile_path)
+        # Setup Geckodriver Service
+        if not Path(self.config.FIREFOX_DRIVER_PATH).exists():
+            raise FileNotFoundError(Fore.RED + "Geckodriver not Found!")
 
-        _service: Service =Service(executable_path=f"geckodriver-v0.36.0-win64/geckodriver.exe")
-        self._web_driver = Firefox(service=_service, options=_options)
+        service: Service =Service(executable_path=self.config.FIREFOX_DRIVER_PATH)
+
+        # Initialize web driver
+        self.web_driver = Firefox(service=service, options=options)
 
     def _get_email(self) -> str:
         while True:
@@ -132,46 +148,46 @@ class GlassDoor:
         # _password: str = getpass(Fore.BLUE + "\nEnter Password: ")
         _password: str = self._get_password()
 
-        self._set_up()
-        self._web_driver.get(self._glassdoor_url)
+        self._initialize_web_driver()
+        self.web_driver.get(self._glassdoor_url)
 
         time.sleep(self._sleep_timeout)
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserEmail"))).send_keys(_email)
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserPassword"))).send_keys(_password)
+        WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserEmail"))).send_keys(_email)
+        WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
+        WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "inlineUserPassword"))).send_keys(_password)
 
         time.sleep(self._sleep_timeout)
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Sign in']]"))).click()
+        WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Sign in']]"))).click()
 
         try:
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//div[@data-display-variant='full-bleed']")))
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserEmail"))).send_keys(_email)
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserPassword"))).send_keys(_password)
+            WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//div[@data-display-variant='full-bleed']")))
+            WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserEmail"))).send_keys(_email)
+            WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Continue with email']]"))).click()
+            WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "modalUserPassword"))).send_keys(_password)
 
             time.sleep(self._sleep_timeout)
 
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button"))).click()
+            WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "/html/body/div[5]/div/div/div/dialog/div[2]/div[1]/div/div[2]/div/div/div/div/div/div/form/div[2]/div/button"))).click()
         except TimeoutException:
             print(Fore.RED + "\nSomething went Wrong! Please try Again!")
 
         time.sleep(5)
 
-        if self._web_driver.title.__eq__("Community | Glassdoor"):
+        if self.web_driver.title.__eq__("Community | Glassdoor"):
             print(Fore.YELLOW + "\nYou are Logged In!")
         else:
             print(Fore.RED + "\nUnable to Login! Something went Wrong! Please try Again!")
 
-        self._web_driver.quit()
+        self.web_driver.quit()
 
     @staticmethod
     def _show_notification(title="", message="", timeout=10) -> None:
         notification.notify(title=title, message=message, app_name="AutoApply", timeout=timeout)
 
     def _check_if_user_is_logged_in(self) -> None:
-        self._set_up()
+        self._initialize_web_driver()
         self._web_driver.get(self._glassdoor_url)
 
         time.sleep(self._sleep_timeout)
@@ -388,7 +404,7 @@ class GlassDoor:
         # _url: str = input(Fore.BLUE + "\nEnter the Job URL: ")
         _url: str = "https://www.glassdoor.ca/job-listing/junior-ai-integration-engineer-full-stack-venuiti-JV_IC2280158_KO0,41_KE42,49.htm?jl=1009852238063&utm_source=jobalert&utm_medium=email&utm_content=ja-jobpos3-1009852238063&utm_campaign=jobAlertAlert&tgt=GD_JOB_VIEW&src=GD_JOB_AD&uido=2B4F8C43B4AF03F6F90033411AC61A7B&ao=1136043&jrtk=5-yul1-0-1j3achbjkiuek805-5dab5a4bf7c2a922&cs=1_7196c3be&s=224&t=JA&pos=103&ja=358098550&guid=00000198d4c2a5a48712787a4778738f&jobListingId=1009852238063&ea=1&vt=e&cb=1755916578669&ctt=1755929691044&srs=EMAIL_JOB_ALERT&gdir=1"
 
-        self._set_up()
+        self._initialize_web_driver()
 
         self._web_driver.get(_url)
 
@@ -408,17 +424,17 @@ class GlassDoor:
             # print("Apply on Company Website")
 
     def _read_glassdoor_url(self) -> None:
-        """ read the 'GlassDoor' url & validate it """
+        """ read the glassDoor url & validate """
         while True:
             self.config.GLASSDOOR_LANDING_PAGE = input(Fore.BLUE + "Enter the GlassDoor URL: ")
 
             if self.config.GLASSDOOR_LANDING_PAGE.startswith("http") and self.config.GLASSDOOR_LANDING_PAGE.__contains__("glassdoor"):
                 break
             
-            print(Fore.RED + "Invalid URL! Please enter a valid Glassdoor URL.")
+            print(Fore.RED + "Invalid URL! Please try again.")
 
     def _read_firefox_profile_path(self) -> None:
-        """ read 'Firefox' profile path & validate """
+        """ read firefox profile path & validate """
         while True:
             self.config.FIREFOX_PROFILE_PATH = input(Fore.BLUE + "Enter the Profile Path of Firefox: ")
             pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
@@ -426,10 +442,10 @@ class GlassDoor:
             if pattern.match(self.config.FIREFOX_PROFILE_PATH):
                 break
 
-            print(Fore.RED + "Invalid Profile Path! Please enter a valid Firefox profile directory.")
+            print(Fore.RED + "Invalid Profile Path! Please try again.")
 
     def _read_resume_path(self) -> None:
-        """ read 'Resume' path & validate """
+        """ reads resume path and validate """
         while True:
             self.config.RESUME_PATH = input(Fore.BLUE + "Enter the Resume Path: ")
 
@@ -439,10 +455,10 @@ class GlassDoor:
 
                 print(Fore.RED + "Incorrect File Format! File must exist and be .pdf or .docx")
 
-            print(Fore.RED + "File Not Found! Please enter a valid Resume directory.")
+            print(Fore.RED + "File Not Found! Please try again.")
 
     def _read_country(self) -> None:
-        """ read 'Country' & validate """
+        """ read country and validate """
         while True:
             self.user.address.country = input(Fore.BLUE + "Enter Country: ")
 
@@ -454,7 +470,7 @@ class GlassDoor:
             except LookupError:
                 print(Fore.RED + "Can't Validate Country! Please try Again")
 
-            print(Fore.RED + "Invalid Input! Please Enter a Valid Country Name!")
+            print(Fore.RED + "Invalid Country! Please try again!")
 
     def _read_postal_code(self) -> None:
         """ read Postal Code & validate it
@@ -472,7 +488,7 @@ class GlassDoor:
             print(Fore.RED + "Invalid Postal Code! Please try again.")
 
     def _read_city(self) -> None:
-        """ read 'City' & validate """
+        """ read city and validate """
         while True:
             self.user.address.city = input(Fore.BLUE + "Enter City: ")
 
@@ -484,7 +500,7 @@ class GlassDoor:
             print(Fore.RED + "Invalid City Name! Please try again.")
 
     def _read_state(self) -> None:
-        """ read State & validate """
+        """ read state and validate """
         while True:
             self.user.address.state = input(Fore.BLUE + "Enter State: ")
 
@@ -493,10 +509,10 @@ class GlassDoor:
 
                 break
 
-            print(Fore.RED + "Invalid Input! Please Entera Valid State Name!")
+            print(Fore.RED + "Invalid State Name! Please try again!")
 
     def _read_street_address(self) -> None:
-        """ read Street Address & validate """
+        """ read street address & validate """
         while True:
             self.user.address.street_address = input(Fore.BLUE + "Enter Street Address: ")
 
@@ -505,103 +521,91 @@ class GlassDoor:
 
                 break
 
-            print(Fore.RED + "Invalid Input! Please Enter a Valid 'Street Address'.")
+            print(Fore.RED + "Invalid Street Address! Please try again.")
 
     def _read_past_job_title(self) -> None:
-        """ read Past Job Title & validate it """
+        """ read previous job title & validate """
         while True:
-            self.user.past_job.title = input(Fore.BLUE + "Enter Past Job Title: ")
+            self.user.past_job.title = input(Fore.BLUE + "Enter Previous Job Title: ")
 
             if bool(self.user.past_job.title.strip()):
                 self.user.past_job.title.title()
 
                 break
 
-            print(Fore.RED + "Invalid Job Title! Please try again.")
+            print(Fore.RED + "Invalid Previous Job Title! Please try again.")
 
     def _read_past_job_company(self) -> None:
-        """ read Past Company & validate it """
+        """ read previous company and validate """
         while True:
-            self.user.past_job.company = input(Fore.BLUE + "Enter Past Company: ")
+            self.user.past_job.company = input(Fore.BLUE + "Enter Previous Company: ")
 
             if bool(self.user.past_job.company):
                 self.user.past_job.company.title()
 
                 break
 
-            print(Fore.RED + "Invalid Past Company Name! Please try again.")
+            print(Fore.RED + "Invalid Previous Company Name! Please try again.")
 
-    def _set_past_experience(self) -> None:
-        """ Read Experience Years """
+    def _read_past_experience(self) -> None:
+        """ read past work experience and validate """
         while True:
             try:
-                # self._past_experience = int(input(Fore.BLUE + "Enter Experience: "))
-                self._past_experience = 3
+                self.user.past_job.experience = int(input(Fore.BLUE + "Enter Experience: "))
                 
-                if self._past_experience:
+                if self.user.past_job.experience >= 0:
                     break
+
+                print(Fore.RED + "Invalid Input! Experience should be greater than 0.")
             except ValueError:
                 print(Fore.RED + "Invalid Input! PLease Enter a Number!")
 
-    @staticmethod
-    def _display_commute_to_work_options() -> None:
-        """ Method to Display Commute to Work Options """
-        print(Fore.MAGENTA + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
-        print(Fore.MAGENTA + "1. Yes, I can make the commute")
-        print(Fore.MAGENTA + "2. Yes, I am planning to relocate")
-        print(Fore.MAGENTA + "3. Yes, but I need relocation assistance")
-        print(Fore.MAGENTA + "4. No")
+    def _show_commute_options(self) -> None:
+        """ display commute to work or relocation options for the job """
+        print(Fore.YELLOW + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
 
-    def _set_commute_to_work(self) -> None:
+        for key, value in self.config.COMMUTE_OPTIONS:
+            print(Fore.MAGENTA + f"{key}. {value}")
+
+    def _read_commute_to_work(self) -> None:
+        """ prompt user commute to work options """
         while True:
-            self._display_commute_to_work_options()
+            self._show_commute_options()
 
             try:
-                # option: int = int(input(Fore.BLUE + "Select Commute to Work Option: "))
-                option: int = 1
+                choice: int = int(input(Fore.BLUE + "Select Commute to Work Option: "))
 
-                match option:
-                    case 1:
-                        self._commute_to_work = "Yes, I can make the commute"
+                if choice in self.config.COMMUTE_OPTIONS:
+                    self.user.past_job.commute = self.config.COMMUTE_OPTIONS[choice]
 
-                        break
-                    case 2:
-                        self._commute_to_work = "Yes, I am planning to relocate"
+                    break
 
-                        break
-                    case 3:
-                        self._commute_to_work = "Yes, but I need relocation assistance"
-
-                        break
-                    case 4:
-                        self._commute_to_work = "No"
-
-                print(Fore.RED + "Invalid Input! The Number Should be in Between 1 & 4")
+                print(Fore.RED + "Invalid Input! Please select a number between 1 & 4.")
             except ValueError:
-                print(Fore.RED + "Invalid Input! Please Enter a Number")
+                print(Fore.RED + "Invalid Input! Please enter a number.")
 
     def _read_first_name(self) -> None:
-        """ read 'First' name and validate """
+        """ read first name and validate """
         while True:
             self.user.first_name = input(Fore.BLUE + "Enter First Name: ")
 
             if bool(self.user.first_name) and self.user.first_name.isalpha():
                 break
 
-            print(Fore.RED + "Invalid Input! Plase Enter a Valid First Name!")
+            print(Fore.RED + "Invalid Input! Plase enter a valid first name!")
 
     def _read_last_name(self) -> None:
-        """ read 'Last' name and validate """
+        """ read last name and validate """
         while True:
             self.user.last_name = input(Fore.BLUE + "Enter Last Name: ")
 
             if bool(self.user.last_name) and self.user.last_name.isalpha():
                 break
 
-            print(Fore.RED + "Invalid Input! Plase Enter a Valid Last Name!")
+            print(Fore.RED + "Invalid Input! Plase enter a valid last name!")
 
     def _read_phone_number(self) -> None:
-        """ read 'Phone' number and validate """
+        """ reads phone number and validate """
         while True:
             self.user.phone_number = input(Fore.BLUE + "Enter Phone Number: ")
             region = pycountry.countries.lookup(self.user.address.country).alpha_2
@@ -612,7 +616,7 @@ class GlassDoor:
             except NumberParseException:
                 pass
 
-            print(Fore.RED + "Invalid Input! Plase Enter a Valid Phone Number!")
+            print(Fore.RED + "Invalid Input! Plase enter a valid phone number!")
 
     def _collect_user_inputs(self) -> None:
         """ collect all user inputs """
@@ -630,17 +634,14 @@ class GlassDoor:
             "Phone Number": self._read_phone_number,
             "Past Job Title": self._read_past_job_title,
             "Past Job Company": self._read_past_job_company,
-            # "Past Experience": self._read_past_experience
-            # "Commute Preferences": self._read_commute_to_work
+            "Past Experience": self._read_past_experience,
+            "Commute Preferences": self._read_commute_to_work
         }
 
         for label, method in input_methods.items():
             print(Fore.YELLOW + f"\nSetting {label} ...")
 
             method()
-
-        # self._set_past_experience()
-        # self._set_commute_to_work()
 
     @staticmethod
     def _read_user_choice() -> int:
@@ -653,7 +654,7 @@ class GlassDoor:
             return -1
 
     def _handle_choice(self, choice) -> None:
-        """ handle menu choice from user """
+        """ handle menu choice """
         match choice:
             case 1:
                 self._apply_using_url()
@@ -665,7 +666,7 @@ class GlassDoor:
         self._collect_user_inputs()
 
         while True:
-            self._display_options()
+            self._show_options()
 
             choice: int = self._read_user_choice()
 
