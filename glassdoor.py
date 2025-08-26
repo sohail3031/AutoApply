@@ -34,6 +34,7 @@ class Config:
     FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
     SLEEP_TIMEOUT: int = 4
     RESUME_PATH: str = str()
+    POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
 
 @dataclass
 class JobHistory:
@@ -455,78 +456,80 @@ class GlassDoor:
 
             print(Fore.RED + "Invalid Input! Please Enter a Valid Country Name!")
 
-    def _set_postal_code(self) -> None:
+    def _read_postal_code(self) -> None:
+        """ read Postal Code & validate it
+        'Note: Need to implement a better way to validate postal codes'
+         """
         while True:
-            # self._postal_code: str = input("Enter Postal Code: ")
-            self._postal_code: str = "N2H OB7"
+            self.user.address.postal_code = input(Fore.BLUE + "Enter Postal Code: ")
+            pattern: re = re.compile(self.config.POSTAL_CODE_PATTERN, re.IGNORECASE)
 
-            if len(self._postal_code) in range(4, 8):
-                self._postal_code.upper()
+            if pattern.match(self.user.address.postal_code):
+                self.user.address.postal_code.upper()
 
                 break
 
-            print(Fore.RED + "Invalid Postal Code!")
+            print(Fore.RED + "Invalid Postal Code! Please try again.")
 
-    def _set_city(self) -> None:
+    def _read_city(self) -> None:
+        """ read 'City' & validate """
         while True:
-            # self._city: str = input("Enter City: ")
-            self._city: str = "Kitchener"
+            self.user.address.city = input(Fore.BLUE + "Enter City: ")
 
-            if self._city:
-                self._city.title()
+            if bool(self.user.address.city.strip()) and self.user.address.city.replace(" ", "").isalpha():
+                self.user.address.city.title()
 
                 break
 
-            print(Fore.RED + "Invalid City Name!")
+            print(Fore.RED + "Invalid City Name! Please try again.")
 
-    def _set_state(self) -> None:
+    def _read_state(self) -> None:
+        """ read State & validate """
         while True:
-            # self._state: str = input("Enter State: ")
-            self._state: str = "Ontario"
+            self.user.address.state = input(Fore.BLUE + "Enter State: ")
 
-            if self._state:
-                self._state.title()
+            if bool(self.user.address.state) and self.user.address.state.replace(" ", "").isalpha():
+                self.user.address.state.title()
 
                 break
 
-            print(Fore.RED + "Invalid State Name!")
+            print(Fore.RED + "Invalid Input! Please Entera Valid State Name!")
 
-    def _set_street_address(self) -> None:
+    def _read_street_address(self) -> None:
+        """ read Street Address & validate """
         while True:
-            # self._street_address: str = input("Enter Street Address: ")
-            self._street_address: str = "85 Duke Street West"
+            self.user.address.street_address = input(Fore.BLUE + "Enter Street Address: ")
 
-            if self._street_address:
-                self._street_address.title()
+            if bool(self.user.address.street_address) and any(i.isdigit() for i in self.user.address.street_address) and any(i.isalpha() for i in self.user.address.street_address):
+                self.user.address.street_address.title()
 
                 break
 
-            print(Fore.RED + "Invalid Street Address!")
+            print(Fore.RED + "Invalid Input! Please Enter a Valid 'Street Address'.")
 
-    def _set_past_job_title(self) -> None:
+    def _read_past_job_title(self) -> None:
+        """ read Past Job Title & validate it """
         while True:
-            # self._past_job_title = input(Fore.BLUE + "Enter Past Job Title: ")
-            self._past_job_title = "Full Stack Developer"
+            self.user.past_job.title = input(Fore.BLUE + "Enter Past Job Title: ")
 
-            if self._past_job_title:
-                self._past_job_title.title()
+            if bool(self.user.past_job.title.strip()):
+                self.user.past_job.title.title()
 
                 break
 
-            print(Fore.RED + "Invalid Job Title!")
+            print(Fore.RED + "Invalid Job Title! Please try again.")
 
-    def _set_past_job_company(self) -> None:
-        """ Read the Past Company """
+    def _read_past_job_company(self) -> None:
+        """ read Past Company & validate it """
         while True:
-            # self._past_job_company = input(Fore.BLUE + "Enter Past Company: ")
-            self._past_job_company = "Infosys"
+            self.user.past_job.company = input(Fore.BLUE + "Enter Past Company: ")
 
-            if self._past_job_company:
-                self._past_job_company.title()
+            if bool(self.user.past_job.company):
+                self.user.past_job.company.title()
 
                 break
 
-            print(Fore.RED + "Invalid Past Company Name!")
+            print(Fore.RED + "Invalid Past Company Name! Please try again.")
 
     def _set_past_experience(self) -> None:
         """ Read Experience Years """
@@ -619,14 +622,15 @@ class GlassDoor:
             "Resume Path": self._read_resume_path,
             "First Name": self._read_first_name,
             "Last Name": self._read_last_name,
+            "Address": self._read_street_address,
+            "City": self._read_city,
+            "State": self._read_state,
             "Country": self._read_country,
+            "Postal Code": self._read_postal_code,
             "Phone Number": self._read_phone_number,
-            # "Postal Code": self._read_postal_code,
-            # "City": self._read_city,
-            # "State": self._read_state,
-            # "Address": self._read_street_address,
-            # "Past Job Title": self._read_past_job_title,
-            # "Past Job Company": self._read_past_job_company,
+            "Past Job Title": self._read_past_job_title,
+            "Past Job Company": self._read_past_job_company,
+            # "Past Experience": self._read_past_experience
             # "Commute Preferences": self._read_commute_to_work
         }
 
@@ -635,13 +639,6 @@ class GlassDoor:
 
             method()
 
-        # self._set_country()
-        # self._set_postal_code()
-        # self._set_city()
-        # self._set_state()
-        # self._set_street_address()
-        # self._set_past_job_title()
-        # self._set_past_job_company()
         # self._set_past_experience()
         # self._set_commute_to_work()
 
