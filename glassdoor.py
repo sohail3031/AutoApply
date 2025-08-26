@@ -255,103 +255,112 @@ class GlassDoor:
         self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
-    def _upload_a_resume_for_this_application(self) -> None:
-        time.sleep(self._sleep_timeout)
+    def _upload_resume(self) -> None:
+        """
+            Upload the Resume for the current Job
+            The Upload Resume option will open file explorer to upload a file and Selenium doesn't have that functionality
+            To bypass this issue, 'PyAutoGUI' has been used
+         """
+        time.sleep(self.config.SLEEP_TIMEOUT)
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
+        # Click on the existing Resume
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
 
-        time.sleep(self._sleep_timeout)
+        # Scroll to "Resume Option" button
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))).click()
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))).click()
+        # Click on "Upload a Different File" option
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[text()='Upload a different file']"))).click()
 
-        time.sleep(self._sleep_timeout)
-
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//div[text()='Upload a different file']"))).click()
-
-        time.sleep(self._sleep_timeout)
-
-        pyperclip.copy(self._resume_path)
+        # Copy & Paste the Resume path
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        pyperclip.copy(self.config.RESUME_PATH)
         pyautogui.hotkey("ctrl", "v")
         pyautogui.press("enter")
 
-        time.sleep(self._sleep_timeout)
+        # Click on "Continue" buton
+        time.sleep(self.config.SLEEP_TIMEOUT)
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))).click()
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))).click()
 
-    def _add_relevant_work_experience_information(self) -> None:
-        """ Method to Add Relevant Work Experience """
-        time.sleep(self._sleep_timeout)
+    def _fill_work_experience(self) -> None:
+        """ Fill the relevant past Job experience """
+        time.sleep(self.config.SLEEP_TIMEOUT)
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self._past_job_title)
+        # Fill Past Job Title
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.user.past_job.title)
         pyautogui.moveTo(300, 300)
         pyautogui.click()
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self._past_job_company)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.user.past_job.company)
         pyautogui.moveTo(300, 300)
         pyautogui.click()
 
-        time.sleep(self._sleep_timeout)
+        # Click on the "Continue" button
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
+    def _fill_screener_questions(self) -> None:
+        """ Answer Screener Questions during an Application process """
+        # Get all the text fields
+        time.sleep(self.config.SLEEP_TIMEOUT)
 
-    def _answer_screener_questions_from_the_employer(self) -> None:
-        """ Method to Answer the Additional Questions from the Employer """
-        time.sleep(self._sleep_timeout)
-
-        text_inputs = self._web_driver.find_elements(By.XPATH, "//input[@type='text']")
+        text_inputs = self.web_driver.find_elements(By.XPATH, "//input[@type='text']")
 
         for input_field in text_inputs:
+            # Get the "ID" of the text field and answer
             field_id = input_field.get_attribute("id")
 
-            self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.ID, field_id))
-            WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.ID, field_id))).send_keys(str(self._past_experience))
+            self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, field_id))
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, field_id))).send_keys(str(self.user.past_job.experience))
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
-            time.sleep(self._sleep_timeout)
+        # AAnswer "Commute" to work question
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//span[text()='{self.user.past_job.commute}']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{self.user.past_job.commute}']"))).click()
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviout: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, f"//span[text()='{self._commute_to_work}']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{self._commute_to_work}']"))).click()
+        # Click on "Continue" button
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
 
-        time.sleep(self._sleep_timeout)
+    def _submit_job_application(self) -> None:
+        """ Review & Submit the Job Application """
+        # Click on the Submit button
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']")))
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
+    def _fill_contact_information(self) -> None:
+        """ Fill the Contact Information form """
+        # Enter First Name
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.user.first_name)
 
-    def _review_the_contents_of_this_job_application(self) -> None:
-        """ Method to Review the Content """
-        time.sleep(self._sleep_timeout)
+        # Enter Last Name
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.user.last_name)
 
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
-        # WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']"))).click()
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']")))
+        # Click the Country dropdown
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.find_element(By.XPATH, "//button[@aria-haspopup='listbox']").click()
 
-    def _add_or_update_your_contact_information(self) -> None:
-        """ Method to Update Contact Information """
-        time.sleep(self._sleep_timeout)
+        # Find & elect the Country
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.user.address.country}')]"))).click()
 
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self._first_name)
+        # Enter Phone Number
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.user.phone_number)
 
-        time.sleep(self._sleep_timeout)
-
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self._last_name)
-
-        time.sleep(self._sleep_timeout)
-
-        self._web_driver.find_element(By.XPATH, "//button[@aria-haspopup='listbox']").click()
-
-        time.sleep(self._sleep_timeout)
-
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self._country}')]"))).click()
-
-        time.sleep(self._sleep_timeout)
-
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self._phone_number)
-
-        time.sleep(self._sleep_timeout)
-
-        self._web_driver.execute_script("arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});", self._web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
-        WebDriverWait(self._web_driver, self._web_driver_timeout).until(EC.element_to_be_clickable((By.XPATH, "//button[data-testid='continue-button']")))
+        # Click on the Continue button
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[data-testid='continue-button']"))).click()
 
     def _process_easy_apply(self) -> None:
         """ Automate the Job with 'Easy Apply' button """
@@ -370,24 +379,26 @@ class GlassDoor:
 
             if "Just a moment" in page_title:
                 self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                self.web_driver.quit()
                 sys.exit()
             elif "Add or update your address" in page_title:
                 self._fill_address_form()
             elif "Upload a resume for this application" in page_title:
-                self._upload_a_resume_for_this_application()
+                self._upload_resume()
             elif "Add relevant work experience information" in page_title:
-                self._add_relevant_work_experience_information()
+                self._fill_work_experience()
             elif "Answer Screener Questions from the employer" in page_title:
-                self._answer_screener_questions_from_the_employer()
+                self._fill_screener_questions()
             elif "Add or update your contact information" in page_title:
-                self._add_or_update_your_contact_information()
+                self._fill_contact_information()
             elif "Review the contents of this job application" in page_title:
-                self._review_the_contents_of_this_job_application()
+                self._submit_job_application()
                 self._display_notification(title="Success", message="Applied to Job Successfully")
 
                 break
             else:
                 self._display_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
+                self.web_driver.quit()
                 sys.exit()
 
             time.sleep(self.config.SLEEP_TIMEOUT)
@@ -423,6 +434,23 @@ class GlassDoor:
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a number.")
 
+    def _get_apply_button_text(self) -> (str | None):
+        """ Detects the Job Application button available on the page """
+        button_selectors: dict[str: str] = {
+            "Easy Apply": "//button[@data-test='easyApply']",
+            "Apply on employer site": "//button[@data-test='applyButton']"
+        }
+
+        for text, xpath in button_selectors.items():
+            try:
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+
+                return text
+            except TimeoutException:
+                print(Fore.YELLOW + "Easy Apply Button is Missing")
+
+        return None
+
     def _apply_to_job_via_url(self) -> None:
         """ Apply to Jobs using GlassDoor URL """
         # print(Fore.YELLOW + "\nChecking if the User is Already Logged In")
@@ -447,17 +475,16 @@ class GlassDoor:
             # Check if a Security message appears
             if "Just a moment" in self.web_driver.title:
                 self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                self.web_driver.quit()
                 sys.exit()
 
-            try:
-                # Check if the "Easy Apply" button is available
-                WebDriverWait(self.web_driver, self._web_driver_timeout).until(EC.visibility_of_element_located((By.XPATH, "//button[@data-test='easyApply']")))
+            # Apply button text
+            apply_button_text: (str | None) = self._get_apply_button_text()
 
-                self._process_easy_apply()
-            except TimeoutException as e:
-                print(f"Message: {e.msg}")
-                print(f"Stacktrace: {e.stacktrace}")
-                print("Apply on Company Website")
+            if apply_button_text is None:
+                self._display_notification(title="Unable to Apply for Job", message="Unable to find the Button text to apply for the Job.")
+                self.web_driver.quit()
+                sys.exit()
 
     def _read_glassdoor_url(self) -> None:
         """ read the glassDoor url & validate """
@@ -693,7 +720,7 @@ class GlassDoor:
         """ handle menu choice """
         match choice:
             case 1:
-                self._apply_using_url()
+                self._apply_to_job_via_url()
             case _:
                 print(Fore.RED + "Invalid Input!")
 
