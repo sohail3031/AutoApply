@@ -33,7 +33,7 @@ class Config:
     GLASSDOOR_LANDING_PAGE: str = str()
     FIREFOX_PROFILE_PATH: str = str()
     FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-    SLEEP_TIMEOUT: (int | float) = random.uniform(1, 6)
+    SLEEP_TIMEOUT: (int | float) = random.uniform(2, 6)
     RESUME_PATH: str = str()
     POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
     FIREFOX_DRIVER_PATH = "geckodriver-v0.36.0-win64/geckodriver.exe"
@@ -75,27 +75,7 @@ class GlassDoor:
     def __init__(self) -> None:
         init(autoreset=True)
 
-        self._check_user_login: bool = bool()
         self.web_driver: Optional[Firefox] = None
-        self._email_pattern: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-        self._web_driver_timeout: int = 10
-        self._glassdoor_url: str = str()
-        self._firefox_profile_path: str = str()
-        self._firefox_profile_path_pattern: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-        self._sleep_timeout: int = 4
-        self._resume_path: str = str()
-        self._country: str = str()
-        self._postal_code: str = str()
-        self._city: str = str()
-        self._state: str = str()
-        self._street_address: str = str()
-        self._past_job_title: str = str()
-        self._past_job_company: str = str()
-        self._past_experience: int = int()
-        self._commute_to_work: str = str()
-        self._first_name: str = str()
-        self._last_name: str = str()
-        self._phone_number: str = str()
         self.config: Config = Config()
         self.user: User = User()
 
@@ -233,6 +213,7 @@ class GlassDoor:
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
 
         select = Select(self.web_driver.find_element(By.ID, "location-fields-country-list"))
+        print("Country: " + self.user.address.country)
         select.select_by_visible_text(self.user.address.country)
         time.sleep(self.config.SLEEP_TIMEOUT)
 
@@ -283,9 +264,8 @@ class GlassDoor:
 
         # Click on "Continue" buton
         time.sleep(self.config.SLEEP_TIMEOUT)
-
-        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@class='a1920d4b66bbf6ec01da2f89b5e31193d aaa0aadab69ab92bbf705a40aee5ca9cb css-q81v3z e8ju0x50']"))).click()
+        self.web_driver.execute_script(self.config.WEBDRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "(//button/span[text()='Continue'])[3]"))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "(//button/span[text()='Continue'])[3]"))).click()
 
     def _fill_work_experience(self) -> None:
         """ Fill the relevant past Job experience """
@@ -401,16 +381,16 @@ class GlassDoor:
                 self.web_driver.quit()
                 sys.exit()
 
-            time.sleep(self.config.SLEEP_TIMEOUT)
+            time.sleep(self.config.SLEEP_TIMEOUT * 2)
 
     @staticmethod
-    def _read_job_url() -> str:
+    def _read_job_url(number: int) -> str:
         """
             Reads Job URL
             :return: Job URL
         """
         while True:
-            url: str = input(Fore.BLUE + "\nEnter the Job URL: ").strip()
+            url: str = input(Fore.BLUE + f"\nEnter the URL for Job {number + 1}: ").strip()
 
             if bool(url) and url.startswith("http") and url.__contains__("glassdoor"):
                 return url
@@ -462,8 +442,8 @@ class GlassDoor:
         number_of_jobs_to_apply: int = self._number_of_jobs_to_apply()
 
         # Get Job URL'S
-        for i in range(number_of_jobs_to_apply):
-            jobs_url.append(self._read_job_url())
+        for index in range(number_of_jobs_to_apply):
+            jobs_url.append(self._read_job_url(index))
 
         # Apply to Job's
         for i in range(number_of_jobs_to_apply):
@@ -486,8 +466,13 @@ class GlassDoor:
                 self.web_driver.quit()
                 sys.exit()
 
+            if apply_button_text.__eq__("Easy Apply"):
+                self._process_easy_apply()
+            else:
+                print("Other Job Application")
+
     def _read_glassdoor_url(self) -> None:
-        """ read the glassDoor url & validate """
+        """ Read the GlassDoor URL & Validate """
         while True:
             self.config.GLASSDOOR_LANDING_PAGE = input(Fore.BLUE + "Enter the GlassDoor URL: ")
 
@@ -497,7 +482,7 @@ class GlassDoor:
             print(Fore.RED + "Invalid URL! Please try again.")
 
     def _read_firefox_profile_path(self) -> None:
-        """ read firefox profile path & validate """
+        """ Read Firefox Profile Path & Validate """
         while True:
             self.config.FIREFOX_PROFILE_PATH = input(Fore.BLUE + "Enter the Profile Path of Firefox: ")
             pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
@@ -521,15 +506,15 @@ class GlassDoor:
             print(Fore.RED + "File Not Found! Please try again.")
 
     def _read_country(self) -> None:
-        """ read country and validate """
+        """ Read Country & Validate """
         while True:
-            self.user.address.country = input(Fore.BLUE + "Enter Country: ")
+            self.user.address.country = input(Fore.BLUE + "Enter Country: ").title()
 
             try:
                 if pycountry.countries.lookup(self.user.address.country) is not None:
-                    self.user.address.country.title()
-
                     break
+
+                print(Fore.RED + "Can't Validate Country! Please try Again")
             except LookupError:
                 print(Fore.RED + "Can't Validate Country! Please try Again")
 
@@ -540,7 +525,7 @@ class GlassDoor:
         'Note: Need to implement a better way to validate postal codes'
          """
         while True:
-            self.user.address.postal_code = input(Fore.BLUE + "Enter Postal Code: ")
+            self.user.address.postal_code = input(Fore.BLUE + "Enter Postal Code: ").title()
             pattern: re = re.compile(self.config.POSTAL_CODE_PATTERN, re.IGNORECASE)
 
             if pattern.match(self.user.address.postal_code):
@@ -553,7 +538,7 @@ class GlassDoor:
     def _read_city(self) -> None:
         """ read city and validate """
         while True:
-            self.user.address.city = input(Fore.BLUE + "Enter City: ")
+            self.user.address.city = input(Fore.BLUE + "Enter City: ").title()
 
             if bool(self.user.address.city.strip()) and self.user.address.city.replace(" ", "").isalpha():
                 self.user.address.city.title()
@@ -565,7 +550,7 @@ class GlassDoor:
     def _read_state(self) -> None:
         """ read state and validate """
         while True:
-            self.user.address.state = input(Fore.BLUE + "Enter State: ")
+            self.user.address.state = input(Fore.BLUE + "Enter State: ").title()
 
             if bool(self.user.address.state) and self.user.address.state.replace(" ", "").isalpha():
                 self.user.address.state.title()
@@ -577,7 +562,7 @@ class GlassDoor:
     def _read_street_address(self) -> None:
         """ read street address & validate """
         while True:
-            self.user.address.street_address = input(Fore.BLUE + "Enter Street Address: ")
+            self.user.address.street_address = input(Fore.BLUE + "Enter Street Address: ").title()
 
             if bool(self.user.address.street_address) and any(i.isdigit() for i in self.user.address.street_address) and any(i.isalpha() for i in self.user.address.street_address):
                 self.user.address.street_address.title()
@@ -589,7 +574,7 @@ class GlassDoor:
     def _read_past_job_title(self) -> None:
         """ read previous job title & validate """
         while True:
-            self.user.past_job.title = input(Fore.BLUE + "Enter Previous Job Title: ")
+            self.user.past_job.title = input(Fore.BLUE + "Enter Previous Job Title: ").title()
 
             if bool(self.user.past_job.title.strip()):
                 self.user.past_job.title.title()
@@ -601,7 +586,7 @@ class GlassDoor:
     def _read_past_job_company(self) -> None:
         """ read previous company and validate """
         while True:
-            self.user.past_job.company = input(Fore.BLUE + "Enter Previous Company: ")
+            self.user.past_job.company = input(Fore.BLUE + "Enter Previous Company: ").title()
 
             if bool(self.user.past_job.company):
                 self.user.past_job.company.title()
@@ -615,7 +600,7 @@ class GlassDoor:
         while True:
             try:
                 self.user.past_job.experience = int(input(Fore.BLUE + "Enter Experience: "))
-                
+
                 if self.user.past_job.experience >= 0:
                     break
 
@@ -624,10 +609,10 @@ class GlassDoor:
                 print(Fore.RED + "Invalid Input! PLease Enter a Number!")
 
     def _show_commute_options(self) -> None:
-        """ display commute to work or relocation options for the job """
-        print(Fore.YELLOW + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
+        """ Display Commute to Work or Relocation options for the Job """
+        print(Fore.MAGENTA + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
 
-        for key, value in self.config.COMMUTE_OPTIONS:
+        for key, value in self.config.COMMUTE_OPTIONS.items():
             print(Fore.MAGENTA + f"{key}. {value}")
 
     def _read_commute_to_work(self) -> None:
@@ -636,7 +621,7 @@ class GlassDoor:
             self._show_commute_options()
 
             try:
-                choice: int = int(input(Fore.BLUE + "Select Commute to Work Option: "))
+                choice: int = int(input(Fore.BLUE + "\nSelect Commute to Work Option: "))
 
                 if choice in self.config.COMMUTE_OPTIONS:
                     self.user.past_job.commute = self.config.COMMUTE_OPTIONS[choice]
@@ -650,9 +635,9 @@ class GlassDoor:
     def _read_first_name(self) -> None:
         """ read first name and validate """
         while True:
-            self.user.first_name = input(Fore.BLUE + "Enter First Name: ")
+            self.user.first_name = input(Fore.BLUE + "Enter First Name: ").title()
 
-            if bool(self.user.first_name) and self.user.first_name.isalpha():
+            if bool(self.user.first_name) and self.user.first_name.replace(" ", "").isalpha():
                 break
 
             print(Fore.RED + "Invalid Input! Plase enter a valid first name!")
@@ -660,9 +645,9 @@ class GlassDoor:
     def _read_last_name(self) -> None:
         """ read last name and validate """
         while True:
-            self.user.last_name = input(Fore.BLUE + "Enter Last Name: ")
+            self.user.last_name = input(Fore.BLUE + "Enter Last Name: ").title()
 
-            if bool(self.user.last_name) and self.user.last_name.isalpha():
+            if bool(self.user.last_name) and self.user.last_name.replace(" ", "").isalpha():
                 break
 
             print(Fore.RED + "Invalid Input! Plase enter a valid last name!")
@@ -712,7 +697,7 @@ class GlassDoor:
         try:
             return int(input(Fore.BLUE + "\nEnter your option: "))
         except ValueError:
-            print(Fore.RED + "Invalid Input! Please Enter a Number!")
+            print(Fore.RED + "Invalid Input! Please enter a valid number!")
 
             return -1
 
@@ -722,7 +707,7 @@ class GlassDoor:
             case 1:
                 self._apply_to_job_via_url()
             case _:
-                print(Fore.RED + "Invalid Input!")
+                print(Fore.RED + "Invalid Input! Please enter a valid number.")
 
     def main(self) -> None:
         """ main method """
