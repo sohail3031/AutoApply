@@ -22,6 +22,7 @@ from selenium.webdriver.support.ui import Select
 from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 
 @dataclass
@@ -324,7 +325,7 @@ class GlassDoor:
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a number.")
 
-    def _apply_button_text(self) -> None:
+    def _handle_application_button(self) -> None:
         """ Detects the Job Application button available on the page """
         button_selectors: dict[str: str] = {
             "Easy Apply": "//button[@data-test='easyApply']",
@@ -359,9 +360,47 @@ class GlassDoor:
         except TimeoutException:
             return False
 
+    def _read_job_details(self) -> list[str]:
+        """ Fetch all the required data to save Job at CareerFlow """
+        # Switch to the Job Posing page & copy the Data
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.switch_to.window(self.web_driver.window_handles[0])
+
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Show more']"))).click()
+
+        return [self.web_driver.find_element(By.TAG_NAME, "h1").text, # Job Title
+                               self.web_driver.find_element(By.TAG_NAME, "h4").text, # Company Name
+                               self.web_driver.current_url, # Job URL
+                               self.web_driver.find_element(By.XPATH, "//div[@data-test='detailSalary']").text, # Salary
+                               self.web_driver.find_element(By.XPATH, "//div[@data-test='location']").text, # Job Location
+                               self.web_driver.find_element(By.CSS_SELECTOR, ".Section_sectionComponent__nRsB2.Section_bottomMargin__Fka0J").text]
+
     def _save_to_career_flow(self) -> None:
         """ Save Job on CareerFlow """
+        # Open CareerFlow Page
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script("window.open('https://app.careerflow.ai/board');")
 
+        # Get the Title of the Page
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        if "Login" in self.web_driver.title:
+            self._display_notification(title="Unable to Save Job to CareerFlow", message="Please Login at CareerFlow to save the Job.")
+
+            return
+
+        self._read_job_details()
+
+        # Switch to CareerFlow page
+        self.web_driver.switch_to.window(self.web_driver.window_handles[2])
+
+        # Click on "Job Tracker"
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Job Tracker']"))).click()
+
+        # Click on "Add Job"
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Add Job']"))).click()
 
     def _save_job(self) -> None:
         """ Save's Job as per user preference """
@@ -403,9 +442,8 @@ class GlassDoor:
                     self.web_driver.quit()
                     sys.exit()
 
+                self._handle_application_button()
                 self._save_job()
-
-                self._apply_button_text()
         else:
             self._display_notification(title="Unable to Apply for Job", message="User is not Logged In. Please Login and try again.")
             sys.exit()
