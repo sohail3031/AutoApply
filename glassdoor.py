@@ -47,6 +47,11 @@ class Config:
     })
 
 @dataclass
+class ScreenerQuestions:
+    """ Data Class For Screener Questions """
+    ELIGIBLE_TO_WORK: str = str()
+
+@dataclass
 class JobHistory:
     """ Previous Job Data """
     title: str = str()
@@ -71,6 +76,7 @@ class User:
     phone_number: str = str()
     address: Address = field(default_factory=Address)
     past_job: JobHistory = field(default_factory=JobHistory)
+    screener_questions: ScreenerQuestions = field(default_factory=ScreenerQuestions)
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -221,11 +227,53 @@ class GlassDoor:
         # Get all Questions
         questions = self.web_driver.find_elements(By.CSS_SELECTOR, "div[id^='q_']")
 
-        for question in questions:
+        for index, question in enumerate(questions, start=1):
             try:
-                pass
+                label_text = self.web_driver.find_element(By.XPATH, f"(//span[@data-testid='rich-text'])[{index}]").text
+
+                self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"div[id^='q_{index}']"))
+
+                if label_text.__contains__("Location") or label_text.__contains__("City"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']/div/span/input"))).send_keys(self.user.address.city)
+                elif label_text.__contains__("Do you currently possess documentation to legally work in") or label_text.__contains__("Are you legally eligible to work in the country where this position is located?"):
+                    if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//div[@id='q_{index}']/div/div/label/span)[1]"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//div[@id='q_{index}']/div/div/label/span)[2]"))).click()
+                elif label_text.__contains__("This is an in-office role based") or label_text.__contains__("Are you willing to relocate to the location for which this role is posted?"):
+                    pass
+                elif label_text.__contains__("By continuing with your application, you agree to the"):
+                    pass
+                elif label_text.__contains__("Have you completed a 4 year Bachelors Degree or 2 year Diploma"):
+                    pass
+                elif label_text.__contains__("What was your major/ program?"):
+                    pass
+                elif label_text.__contains__("Please indicate your desired salary range"):
+                    pass
+                elif label_text.__contains__("What is the main factor that influenced your decision to apply to "):
+                    pass
+                elif label_text.__contains__("Which of the sources below best describe how you heard about"):
+                    pass
+                elif label_text.__contains__("Address"):
+                    pass
+                elif label_text.__contains__("State") or label_text.__contains__("Province"):
+                    pass
+                elif label_text.__contains__("Postal") or label_text.__contains__("ZIP"):
+                    pass
+                elif label_text.__contains__("Country"):
+                    pass
+                elif label_text.__contains__("Do you speak English?"):
+                    pass
+                elif label_text.__contains__("What interests you most about working at "):
+                    pass
+                elif label_text.__contains__("Tell us about a project (school, work, or personal) where you worked"):
+                    pass
+                elif label_text.__contains__("What makes you adaptable and able to thrive in that kind of environment?"):
+                    pass
             except Exception as e:
                 print(Fore.RED + e)
+
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
     def _submit_job_application(self) -> None:
         """ Review & Submit the Job Application """
