@@ -33,7 +33,7 @@ class Config:
     GLASSDOOR_LANDING_PAGE: str = str()
     FIREFOX_PROFILE_PATH: str = str()
     FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-    SLEEP_TIMEOUT: (int | float) = random.uniform(2, 5)
+    SLEEP_TIMEOUT: (int | float) = random.uniform(1, 4)
     RESUME_PATH: str = str()
     POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
     FIREFOX_DRIVER_PATH = "geckodriver-v0.36.0-win64/geckodriver.exe"
@@ -216,25 +216,16 @@ class GlassDoor:
         """ Answer Screener Questions during an Application process """
         # Get all the text fields
         time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "mosaic-provider-module-apply-questions-u74ql7 eu4oa1w0")))
 
-        text_inputs = self.web_driver.find_elements(By.XPATH, "//input[@type='text']")
+        # Get all Questions
+        questions = self.web_driver.find_elements(By.CSS_SELECTOR, "div[id^='q_']")
 
-        for input_field in text_inputs:
-            # Get the "ID" of the text field and answer
-            field_id = input_field.get_attribute("id")
-
-            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, field_id))
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, field_id))).send_keys(str(self.user.past_job.experience))
-            time.sleep(self.config.SLEEP_TIMEOUT)
-
-        # AAnswer "Commute" to work question
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//span[text()='{self.user.past_job.commute}']"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//span[text()='{self.user.past_job.commute}']"))).click()
-
-        # Click on "Continue" button
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
+        for question in questions:
+            try:
+                pass
+            except Exception as e:
+                print(Fore.RED + e)
 
     def _submit_job_application(self) -> None:
         """ Review & Submit the Job Application """
@@ -345,6 +336,7 @@ class GlassDoor:
     def _handle_application_button(self) -> None:
         """ Detects the Job Application button available on the page """
         button_selectors: dict[str: str] = {
+            "Applied": "(//button[.//span[normalize-space()='Applied']])[1]",
             "Easy Apply": "//button[@data-test='easyApply']",
             "Apply on employer site": "//button[@data-test='applyButton']"
         }
@@ -353,8 +345,12 @@ class GlassDoor:
             try:
                 WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, xpath)))
 
-                if text.__eq__("Easy Apply"):
+                if text.__eq__("Applied"):
+                    self._display_notification(title="Can't Apply to this Job!", message="You have already applied to this Job.")
+                    self.web_driver.quit()
+                elif text.__eq__("Easy Apply"):
                     self._process_easy_apply()
+                    self._save_job()
                 else:
                     pass
 
@@ -422,11 +418,11 @@ class GlassDoor:
 
         # Click on Status
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "rc_select_0"))).click()
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "rc_select_0"))).send_keys("Applied")
 
         # Change Status to "Applied"
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class,'ant-select-item-option')][.='Applied']"))).click()
+        # time.sleep(self.config.SLEEP_TIMEOUT)
+        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class,'ant-select-item-option')][.='Applied']"))).click()
 
         # Enter Salary
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -526,7 +522,6 @@ class GlassDoor:
                         sys.exit()
 
                     self._handle_application_button()
-                    self._save_job()
                 else:
                     print(Fore.RED + "User is Not Logged In!")
 
