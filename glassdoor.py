@@ -50,6 +50,9 @@ class Config:
 class ScreenerQuestions:
     """ Data Class For Screener Questions """
     ELIGIBLE_TO_WORK: str = str()
+    COMMUTE_TO_WORK: str = str()
+    BACHELORS_OR_DIPLOMA: str = str()
+    MAJOR_OR_PROGRAM: str = str()
 
 @dataclass
 class JobHistory:
@@ -227,49 +230,88 @@ class GlassDoor:
         # Get all Questions
         questions = self.web_driver.find_elements(By.CSS_SELECTOR, "div[id^='q_']")
 
-        for index, question in enumerate(questions, start=1):
+        for index, question in enumerate(questions, start=0):
             try:
                 label_text = self.web_driver.find_element(By.XPATH, f"(//span[@data-testid='rich-text'])[{index}]").text
 
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"div[id^='q_{index}']"))
 
                 if label_text.__contains__("Location") or label_text.__contains__("City"):
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']/div/span/input"))).send_keys(self.user.address.city)
-                elif label_text.__contains__("Do you currently possess documentation to legally work in") or label_text.__contains__("Are you legally eligible to work in the country where this position is located?"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='text']"))).send_keys(self.user.address.city)
+                elif label_text.__contains__("Do you currently possess documentation to legally work in") or label_text.__contains__("Are you legally eligible to work in"):
                     if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
-                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//div[@id='q_{index}']/div/div/label/span)[1]"))).click()
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
                     else:
-                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//div[@id='q_{index}']/div/div/label/span)[2]"))).click()
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
                 elif label_text.__contains__("This is an in-office role based") or label_text.__contains__("Are you willing to relocate to the location for which this role is posted?"):
-                    pass
+                    if "Yes" in self.user.screener_questions.COMMUTE_TO_WORK:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
                 elif label_text.__contains__("By continuing with your application, you agree to the"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='checkbox' and @value='Yes']"))).click()
                 elif label_text.__contains__("Have you completed a 4 year Bachelors Degree or 2 year Diploma"):
-                    pass
-                elif label_text.__contains__("What was your major/ program?"):
-                    pass
+                    if self.user.screener_questions.BACHELORS_OR_DIPLOMA.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='checkbox' and @value='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='checkbox' and @value='No']"))).click()
+                elif label_text.__contains__("What was your major") or label_text.__contains__("What was your program"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='text']"))).send_keys(self.user.screener_questions.MAJOR_OR_PROGRAM)
                 elif label_text.__contains__("Please indicate your desired salary range"):
-                    pass
-                elif label_text.__contains__("What is the main factor that influenced your decision to apply to "):
-                    pass
+                    Select(self.web_driver.find_element(By.XPATH, f"//div[@id='q_{index}']//select")).select_by_index(1)
+                elif label_text.__contains__("Have you read and agree to the below Disclaimer and Consent?"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
                 elif label_text.__contains__("Which of the sources below best describe how you heard about"):
-                    pass
+                    Select(self.web_driver.find_element(By.XPATH, f"//div[@id='q_{index}']//select")).select_by_index(1)
                 elif label_text.__contains__("Address"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='text']"))).send_keys(self.user.address.street_address)
                 elif label_text.__contains__("State") or label_text.__contains__("Province"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='text']"))).send_keys(self.user.address.state)
                 elif label_text.__contains__("Postal") or label_text.__contains__("ZIP"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//input[@type='text']"))).send_keys(self.user.address.postal_code)
                 elif label_text.__contains__("Country"):
-                    pass
+                    Select(self.web_driver.find_element(By.XPATH, f"//div[@id='q_{index}']//select")).select_by_visible_text(self.user.address.country)
                 elif label_text.__contains__("Do you speak English?"):
-                    pass
+                    if "Yes" in self.user.screener_questions.COMMUTE_TO_WORK:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
                 elif label_text.__contains__("What interests you most about working at "):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//textarea"))).send_keys()
                 elif label_text.__contains__("Tell us about a project (school, work, or personal) where you worked"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//textarea"))).send_keys()
                 elif label_text.__contains__("What makes you adaptable and able to thrive in that kind of environment?"):
-                    pass
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//textarea"))).send_keys()
+                elif label_text.__contains__("What are your salary expectations?"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//textarea"))).send_keys()
+                elif label_text.__contains__("Were you referred by a current"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//textarea"))).send_keys()
+                elif label_text.__contains__("Are you currently located"):
+                    if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
+                elif label_text.__contains__("Do you require sponsorship now or in the future to work"):
+                    if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
+                elif label_text.__contains__("Have you previously worked at"):
+                    if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
+                elif label_text.__contains__("Will you be able to reliably commute or relocate to"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//label[span[contains(normalize-space(.), '{self.user.past_job.commute}')]]//input[@type='radio']"))).click()
+                elif label_text.__contains__("How many years of") or label_text.__contains__("experience"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//label[span[contains(normalize-space(.), '{self.user.past_job.commute}')]]//input[@type='radio']"))).click()
+                elif label_text.__contains__("Have you been convicted, pleaded guilty or no contest to a crime, or are criminal charges pending against you?"):
+                    if self.user.screener_questions.ELIGIBLE_TO_WORK.__eq__("Yes"):
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='Yes']"))).click()
+                    else:
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id,'q_{index}')]//label//span[normalize-space()='No']"))).click()
+                elif label_text.__contains__("What is your current location?"):
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[@id='q_{index}']//label[span[normalize-space(text())='{self.user.address.country}']]//input[@type='checkbox']"))).click()
             except Exception as e:
                 print(Fore.RED + e)
 

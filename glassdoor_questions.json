@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+   "properties": {
+      "configuration": {
+        "firefox profile path": "",
+        "resume path": "",
+        "commute to work": ""
+      },
+
+      "user": {
+        "first name": "",
+        "last name": "",
+        "phone number": "",
+        "address": {
+          "street address": "",
+          "state": "",
+          "city": "",
+          "postal code": "",
+          "country": ""
+        },
+        "job history": {
+          "title": "",
+          "company": "",
+          "experience": ""
+        },
+        "screener questions": {
+        }
+      }
+  }
+}
