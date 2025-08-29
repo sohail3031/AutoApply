@@ -7,6 +7,7 @@ import pyperclip
 import pyautogui
 import phonenumbers
 import random
+import json
 
 from colorama import init, Fore
 from phonenumbers.phonenumberutil import NumberParseException
@@ -88,6 +89,7 @@ class GlassDoor:
         self.web_driver: Optional[Firefox] = None
         self.config: Config = Config()
         self.user: User = User()
+        self.glassdoor_input_data = None
 
     @staticmethod
     def _show_options() -> None:
@@ -101,20 +103,26 @@ class GlassDoor:
 
     def _initialize_web_driver(self) -> None:
         """ Initialize Firefox Web Driver """
-        # Configure Firefox options
-        options: Options = Options()
-        options.set_preference("profile", self.config.FIREFOX_PROFILE_PATH)
-        options.add_argument("-profile")
-        options.add_argument(self.config.FIREFOX_PROFILE_PATH)
+        if self._read_firefox_profile_path():
+            filefox_profile_path = self.glassdoor_input_data["config"]["firefox profile path"]
 
-        # Setup Geckodriver Service
-        if not Path(self.config.FIREFOX_DRIVER_PATH).exists():
-            raise FileNotFoundError(Fore.RED + "Geckodriver not Found!")
+            # Configure Firefox options
+            options: Options = Options()
+            options.set_preference("profile", filefox_profile_path)
+            options.add_argument("-profile")
+            options.add_argument(filefox_profile_path)
 
-        service: Service =Service(executable_path=self.config.FIREFOX_DRIVER_PATH)
+            # Setup Geckodriver Service
+            if not Path(self.config.FIREFOX_DRIVER_PATH).exists():
+                raise FileNotFoundError(Fore.RED + "Geckodriver not Found!")
 
-        # Initialize web driver
-        self.web_driver = Firefox(service=service, options=options)
+            service: Service =Service(executable_path=self.config.FIREFOX_DRIVER_PATH)
+
+            # Initialize web driver
+            self.web_driver = Firefox(service=service, options=options)
+        else:
+            self._display_notification(title="Validation Failed!", message="Invalid Firefox Profile Path!")
+            sys.exit(1)
 
     @staticmethod
     def _display_notification(title:str ="", message: str="", timeout: int=10) -> None:
@@ -127,32 +135,36 @@ class GlassDoor:
     def _fill_address_form(self) -> None:
         """ Fill in or Update the User Address """
         # Select Country
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
+        if self._read_country():
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
 
-        select = Select(self.web_driver.find_element(By.ID, "location-fields-country-list"))
-        select.select_by_visible_text(self.user.address.country)
+            select = Select(self.web_driver.find_element(By.ID, "location-fields-country-list"))
+            select.select_by_visible_text(self.glassdoor_input_data["user"]["address"]["country"].title())
 
         # Enter Postal Code
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-postal-code-input"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self.user.address.postal_code)
+        if self._read_postal_code():
+            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-postal-code-input"))
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["postal code"].upper())
 
         # Enter City & State
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-locality-input"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(f"{self.user.address.city}, {self.user.address.state}")
+        if self._read_city() or self._read_state():
+            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-locality-input"))
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["city"].title() + ", " + self.glassdoor_input_data["user"]["address"]["state"].title())
 
         # Enter Street Address
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-address-input"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(self.user.address.street_address)
+        if self._read_street_address():
+            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-address-input"))
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["street address"].title())
 
         # Click Continue button
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
     def _upload_resume(self) -> None:
@@ -163,46 +175,43 @@ class GlassDoor:
          """
         time.sleep(self.config.SLEEP_TIMEOUT)
 
-        # Click on the existing Resume
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
+        if self._read_resume_path():
+            # Click on the existing Resume
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
 
-        # Scroll to "Resume Option" button
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))).click()
+            # Scroll to "Resume Option" button
+            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))).click()
 
-        # Click on "Upload a Different File" option
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[text()='Upload a different file']"))).click()
+            # Click on "Upload a Different File" option
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[text()='Upload a different file']"))).click()
 
-        # Copy & Paste the Resume path
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        pyperclip.copy(self.config.RESUME_PATH)
-        pyautogui.hotkey("ctrl", "v")
-        pyautogui.press("enter")
+            # Copy & Paste the Resume path
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            pyperclip.copy(self.config.RESUME_PATH)
+            pyautogui.hotkey("ctrl", "v")
+            pyautogui.press("enter")
 
-        # Click on "Continue" buton
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        continue_buttons = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//button[.//span[normalize-space()='Continue']]")))
+            # Click on "Continue" buton
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            continue_buttons = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//button[.//span[normalize-space()='Continue']]")))
 
-        for index, button in enumerate(continue_buttons, start=1):
-            try:
-                if button.is_enabled():
-                    self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]"))).click()
+            for index, button in enumerate(continue_buttons, start=1):
+                try:
+                    if button.is_enabled():
+                        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
+                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]"))).click()
 
-                    print(Fore.YELLOW + "Continue Button Clicked!")
+                        print(Fore.YELLOW + "Continue Button Clicked!")
 
-                    break
-            except Exception as e:
-                print(Fore.RED + f"Failed to click button #{index}: {e}")
-
-                self._display_notification(title="Unable to Upload Resume", message="Unable to click on 'Continue' button! Please try again.")
-                # self.web_driver.quit()
-
-
-        # self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "(//button/span[text()='Continue'])[2]"))
-        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "(//button/span[text()='Continue'])[2]"))).click()
+                        break
+                except Exception as e:
+                    print(Fore.RED + f"Failed to click button #{index}: {e}")
+        else:
+            self._display_notification(title="Validation Failed!", message="File Not Found!")
+            sys.exit(1)
 
     def _fill_work_experience(self) -> None:
         """ Fill the relevant past Job Experience """
@@ -235,6 +244,7 @@ class GlassDoor:
                 label_text = self.web_driver.find_element(By.XPATH, f"(//span[@data-testid='rich-text'])[{index}]").text
 
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]"))
+
             except Exception as e:
                 print(Fore.RED + e)
 
@@ -379,13 +389,11 @@ class GlassDoor:
         """ Checks if the user is Logged """
         print(Fore.YELLOW + "\nChecking if the User is Logged In")
 
-        time.sleep(self.config.SLEEP_TIMEOUT)
-
         try:
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@aria-label='sign in']")))
+            self.web_driver.find_element(By.XPATH, "//button[@aria-label='sign in']")
 
             return False
-        except TimeoutException:
+        except NoSuchElementException:
             return True
 
     def _read_job_details(self) -> list[str]:
@@ -493,8 +501,6 @@ class GlassDoor:
         """
         print(Fore.YELLOW + "\nChecking if the Job is Active")
 
-        time.sleep(self.config.SLEEP_TIMEOUT)
-
         try:
             self.web_driver.find_element(By.ID, "expired-job-notice_Heading")
 
@@ -502,19 +508,31 @@ class GlassDoor:
         except NoSuchElementException:
             return True
 
+    def _validate_job_url(self) -> list[str]:
+        """
+            Reads all the Jobs URL & Validate
+            :return:  Returns List of Strings
+        """
+        jobs_url: list[str] = []
+        number_of_jobs_to_apply: int = len(self.glassdoor_input_data["jobs url"])
+
+        for index in range(number_of_jobs_to_apply):
+            url: str = self.glassdoor_input_data["jobs url"][index]
+
+            if url.startswith("http") and url.__contains__("glassdoor"):
+                jobs_url.append(url)
+
+        return jobs_url
+
     def _apply_to_job_via_url(self) -> None:
         """ Apply to Jobs using GlassDoor URL """
-        jobs_url: list[str] = []
-        number_of_jobs_to_apply: int = self._number_of_jobs_to_apply()
-
-        # Get Job URL'S
-        for index in range(number_of_jobs_to_apply):
-            jobs_url.append(self._read_job_url(index))
+        jobs_url: list[str] = self._validate_job_url()
 
         # Apply to Job's
-        for i in range(number_of_jobs_to_apply):
+        for i in range(len(jobs_url)):
             self._initialize_web_driver()
             self.web_driver.get(jobs_url[i])
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
             # Check if the Job is Active
             if self._is_job_active():
@@ -525,12 +543,9 @@ class GlassDoor:
                     # if self._check_user_login():
                     print(Fore.YELLOW + "User is logged In")
 
-                    time.sleep(self.config.SLEEP_TIMEOUT)
-
                     # Check if a Security message appears
                     if "Just a moment" in self.web_driver.title:
-                        self._display_notification(title="Unable to Apply for Job",
-                                                   message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                        self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                         self.web_driver.quit()
                         sys.exit()
 
@@ -538,103 +553,118 @@ class GlassDoor:
                 else:
                     print(Fore.RED + "User is Not Logged In!")
 
-                    self._display_notification(title="Unable to Apply for Job",
-                                               message="User is not Logged In. Please Login and try again.")
+                    self._display_notification(title="Unable to Apply for Job", message="User is not Logged In. Please Login and try again.")
                     sys.exit()
             else:
                 print(Fore.RED + "Job has expired!")
 
                 self._display_notification(title="Unable to Apply for Job", message="This Job has been expired!")
 
-    def _read_firefox_profile_path(self) -> None:
+    def _read_firefox_profile_path(self) -> bool:
         """ Read Firefox Profile Path & Validate """
-        while True:
-            self.config.FIREFOX_PROFILE_PATH = input(Fore.BLUE + "Enter the Profile Path of Firefox: ")
-            pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
+        firefox_profile_path = self.glassdoor_input_data["config"]["firefox profile path"]
+        pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
 
-            if pattern.match(self.config.FIREFOX_PROFILE_PATH):
-                break
+        if pattern.match(firefox_profile_path):
+            print(Fore.YELLOW + "Firefox Profile Path is valid.")
 
-            print(Fore.RED + "Invalid Profile Path! Please try again.")
+            return True
 
-    def _read_resume_path(self) -> None:
+        print(Fore.RED + "Invalid Profile Path! Please try again.")
+
+        return False
+
+    def _read_resume_path(self) -> bool:
         """ Read Resume Path & Validate """
-        while True:
-            self.config.RESUME_PATH = input(Fore.BLUE + "Enter the Resume Path: ")
+        self.config.RESUME_PATH = self.glassdoor_input_data["config"]["resume path"]
 
-            if os.path.isfile(self.config.RESUME_PATH):
-                if ".pdf" in self.config.RESUME_PATH or ".docx" in self.config.RESUME_PATH:
-                    break
+        if os.path.isfile(self.config.RESUME_PATH):
+            if ".pdf" in self.config.RESUME_PATH or ".docx" in self.config.RESUME_PATH:
+                print(Fore.YELLOW + "Resume Path is valid.")
 
-                print(Fore.RED + "Incorrect File Format! File must exist and be .pdf or .docx")
+                return True
 
-            print(Fore.RED + "File Not Found! Please try again.")
+            print(Fore.RED + "Incorrect File Format! File must exist and be .pdf or .docx")
 
-    def _read_country(self) -> None:
+            return False
+
+        print(Fore.RED + "File Not Found! Please try again.")
+
+        return False
+
+    def _read_country(self) -> bool:
         """ Read Country & Validate """
-        while True:
-            self.user.address.country = input(Fore.BLUE + "Enter Country: ").title()
+        country: str = self.glassdoor_input_data["user"]["address"]["country"].title()
 
-            try:
-                if pycountry.countries.lookup(self.user.address.country) is not None:
-                    break
+        try:
+            if pycountry.countries.lookup(country) is not None:
+                print(Fore.YELLOW + "Country is valid.")
 
-                print(Fore.RED + "Can't Validate Country! Please try Again")
-            except LookupError:
-                print(Fore.RED + "Can't Validate Country! Please try Again")
+                return True
 
-            print(Fore.RED + "Invalid Country! Please try again!")
+            print(Fore.RED + "Can't Validate Country! Please try Again")
+            self._display_notification(title="Validation Failed!", message="Invalid Country! Please try again.")
+            
+            return False
+            
+        except LookupError:
+            print(Fore.RED + "Can't Validate Country! Please try Again")
+            self._display_notification(title="Validation Failed!", message="Invalid Country! Please try again.")
 
-    def _read_postal_code(self) -> None:
-        """ Read Postal Code & Validate
-        'Note: Need to implement a better way to validate postal codes'
-         """
-        while True:
-            self.user.address.postal_code = input(Fore.BLUE + "Enter Postal Code: ").title()
-            pattern: re = re.compile(self.config.POSTAL_CODE_PATTERN, re.IGNORECASE)
+            return False
 
-            if pattern.match(self.user.address.postal_code):
-                self.user.address.postal_code.upper()
+    def _read_postal_code(self) -> bool:
+        """ Read Postal Code & Validate """
+        postal_code = self.glassdoor_input_data["user"]["address"]["postal code"].upper()
+        pattern: re = re.compile(self.config.POSTAL_CODE_PATTERN, re.IGNORECASE)
 
-                break
+        if pattern.match(postal_code):
+            print(Fore.YELLOW + "Postal Code is valid.")
 
-            print(Fore.RED + "Invalid Postal Code! Please try again.")
+            return True
 
-    def _read_city(self) -> None:
+        print(Fore.RED + "Invalid Postal Code! Please try again.")
+
+        return False
+
+    def _read_city(self) -> bool:
         """ Read City & Validate """
-        while True:
-            self.user.address.city = input(Fore.BLUE + "Enter City: ").title()
+        city = self.glassdoor_input_data["user"]["address"]["city"].title()
 
-            if bool(self.user.address.city.strip()) and self.user.address.city.replace(" ", "").isalpha():
-                self.user.address.city.title()
+        if bool(city.strip()) and city.replace(" ", "").isalpha():
+            print(Fore.YELLOW + "City is valid.")
 
-                break
+            return True
 
-            print(Fore.RED + "Invalid City Name! Please try again.")
+        print(Fore.RED + "Invalid City Name! Please try again.")
 
-    def _read_state(self) -> None:
+        return False
+
+    def _read_state(self) -> bool:
         """ Read State & Validate """
-        while True:
-            self.user.address.state = input(Fore.BLUE + "Enter State: ").title()
+        state = self.glassdoor_input_data["user"]["address"]["state"]
 
-            if bool(self.user.address.state) and self.user.address.state.replace(" ", "").isalpha():
-                self.user.address.state.title()
+        if bool(state) and state.replace(" ", "").isalpha():
+            print(Fore.YELLOW + "State is Valid")
 
-                break
+            return True
 
-            print(Fore.RED + "Invalid State Name! Please try again!")
+        print(Fore.RED + "Invalid State Name!")
 
-    def _read_street_address(self) -> None:
+        return False
+
+    def _read_street_address(self) -> bool:
         """ Read Street Address & validate """
-        while True:
-            self.user.address.street_address = input(Fore.BLUE + "Enter Street Address: ").title()
+        street_address = self.glassdoor_input_data["user"]["address"]["street address"]
 
-            if bool(self.user.address.street_address) and any(i.isdigit() for i in self.user.address.street_address) and any(i.isalpha() for i in self.user.address.street_address):
-                self.user.address.street_address.title()
+        if bool(street_address) and any(i.isdigit() for i in street_address) and any(i.isalpha() for i in street_address):
+            print(Fore.YELLOW + "Postal Code is valid.")
 
-                break
+            return True
 
-            print(Fore.RED + "Invalid Street Address! Please try again.")
+        print(Fore.RED + "Invalid Street Address! Please try again.")
+
+        return False
 
     def _read_past_job_title(self) -> None:
         """ Read previous Job Title & Validate """
@@ -753,19 +783,30 @@ class GlassDoor:
                     break
             except ValueError:
                 print(Fore.RED + "Invalid Input! Please enter a number.")
-    
+
+    def _load_glassdoor_input_data(self) -> None:
+        """ Loads input data from data file """
+        try:
+            with open("glassdoor_input_data.json", "r") as file:
+                self.glassdoor_input_data = json.load(file)
+        except FileNotFoundError:
+            print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
+
+            sys.exit()
+
     def _collect_user_inputs(self) -> None:
         """ Collect all user inputs """
         input_methods: dict = {
+            "Loading Input Data": self._load_glassdoor_input_data,
             "Save Job": self._save_job_preferences,
             "Firefox Profile Path": self._read_firefox_profile_path,
             "Resume Path": self._read_resume_path,
+            "Country": self._read_country,
             "First Name": self._read_first_name,
             "Last Name": self._read_last_name,
             "Address": self._read_street_address,
             "City": self._read_city,
             "State": self._read_state,
-            "Country": self._read_country,
             "Postal Code": self._read_postal_code,
             "Phone Number": self._read_phone_number,
             "Past Job Title": self._read_past_job_title,
@@ -799,7 +840,10 @@ class GlassDoor:
 
     def main(self) -> None:
         """ Main Method """
-        self._collect_user_inputs()
+        # self._collect_user_inputs()
+        self._load_glassdoor_input_data()
+        # self._read_firefox_profile_path()
+        # self._read_resume_path()
 
         while True:
             self._show_options()
