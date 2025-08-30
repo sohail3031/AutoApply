@@ -11,7 +11,7 @@ import json
 
 from colorama import init, Fore
 from phonenumbers.phonenumberutil import NumberParseException
-from selenium.common import NoSuchElementException
+from selenium.common import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver import Firefox
@@ -134,9 +134,10 @@ class GlassDoor:
 
     def _fill_address_form(self) -> None:
         """ Fill in or Update the User Address """
+        time.sleep(self.config.SLEEP_TIMEOUT)
+
         # Select Country
         if self._read_country():
-            time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
@@ -202,13 +203,11 @@ class GlassDoor:
                 try:
                     if button.is_enabled():
                         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
-                        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]"))).click()
-
-                        print(Fore.YELLOW + "Continue Button Clicked!")
+                        self.web_driver.find_element(By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]").click()
 
                         break
-                except Exception as e:
-                    print(Fore.RED + f"Failed to click button #{index}: {e}")
+                except ElementNotInteractableException:
+                    print(Fore.RED + f"Failed to click button #{index}")
         else:
             self._display_notification(title="Validation Failed!", message="File Not Found!")
             sys.exit(1)
@@ -217,17 +216,21 @@ class GlassDoor:
         """ Fill the relevant past Job Experience """
         time.sleep(self.config.SLEEP_TIMEOUT)
 
-        # Fill Past Job Title
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.user.past_job.title)
-        pyautogui.moveTo(300, 300)
-        pyautogui.click()
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.user.past_job.company)
-        pyautogui.moveTo(300, 300)
-        pyautogui.click()
+        # Enter Past Job Title
+        if self._read_past_job_title():
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.glassdoor_input_data["user"]["job history"]["title"].title())
+            pyautogui.moveTo(300, 300)
+            pyautogui.click()
+
+        # Enter Past Company Name
+        if self._read_past_job_company():
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.glassdoor_input_data["user"]["job history"]["company"].title())
+            pyautogui.moveTo(300, 300)
+            pyautogui.click()
 
         # Click on the "Continue" button
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
     def _fill_screener_questions(self) -> None:
@@ -245,6 +248,7 @@ class GlassDoor:
 
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]"))
 
+                print(f"Text: {label_text}")
             except Exception as e:
                 print(Fore.RED + e)
 
@@ -666,29 +670,31 @@ class GlassDoor:
 
         return False
 
-    def _read_past_job_title(self) -> None:
+    def _read_past_job_title(self) -> bool:
         """ Read previous Job Title & Validate """
-        while True:
-            self.user.past_job.title = input(Fore.BLUE + "Enter Previous Job Title: ").title()
+        job_title = self.glassdoor_input_data["user"]["job history"]["title"]
 
-            if bool(self.user.past_job.title.strip()):
-                self.user.past_job.title.title()
+        if bool(job_title.strip()):
+            print(Fore.YELLOW + "Past Job Title is valid.")
 
-                break
+            return True
 
-            print(Fore.RED + "Invalid Previous Job Title! Please try again.")
+        print(Fore.RED + "Invalid Previous Job Title! Please try again.")
 
-    def _read_past_job_company(self) -> None:
+        return False
+
+    def _read_past_job_company(self) -> bool:
         """ Read previous Company & Validate """
-        while True:
-            self.user.past_job.company = input(Fore.BLUE + "Enter Previous Company: ").title()
+        company = self.glassdoor_input_data["user"]["job history"]["company"]
 
-            if bool(self.user.past_job.company):
-                self.user.past_job.company.title()
+        if bool(company):
+            print(Fore.YELLOW + "Past Company is valid.")
 
-                break
+            return True
 
-            print(Fore.RED + "Invalid Previous Company Name! Please try again.")
+        print(Fore.RED + "Invalid Previous Company Name! Please try again.")
+
+        return False
 
     def _read_past_experience(self) -> None:
         """ Read past Work Experience & Validate """
@@ -840,10 +846,7 @@ class GlassDoor:
 
     def main(self) -> None:
         """ Main Method """
-        # self._collect_user_inputs()
         self._load_glassdoor_input_data()
-        # self._read_firefox_profile_path()
-        # self._read_resume_path()
 
         while True:
             self._show_options()

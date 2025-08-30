@@ -20,7 +20,7 @@ class AutoApply:
             """)
 
     @staticmethod
-    def _display_options() -> None:
+    def _show_options() -> None:
         print(Fore.MAGENTA +
               "\n0. Exit"
               "\n1. GlassDoor")
@@ -29,12 +29,12 @@ class AutoApply:
         self._show_welcome_message()
 
         while True:
-            self._display_options()
+            self._show_options()
 
             try:
-                _user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
+                user_input: int = int(input(Fore.BLUE + "\nEnter your option: "))
 
-                match _user_input:
+                match user_input:
                     case 0:
                         print(Fore.YELLOW + "Bye!")
 
