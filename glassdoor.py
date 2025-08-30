@@ -236,28 +236,76 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
-    def _validate_required_1(self, index: int) -> None:
-        """ Validate the 'Required' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
-        text = self.glassdoor_input_data["screener questions"]["required questions"].title()
+    def _validate_required_question_1(self, index: int) -> None:
+        """ Validate the 'Required' question 'Do you speak English?' """
+        text = self.glassdoor_input_data["screener questions"]["required questions"]["Do you speak English?"].title()
 
-        if text.__eq__("Yes"):
-            pass
-        elif text.__eq__("No"):
-            pass
+        if text.__eq__("Yes") or text.__eq__("No"):
+            print(Fore.YELLOW + "Do you speak English? is valid.")
+
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[text()='{text}']]/input"))).click()
         else:
             print(Fore.RED + "Invalid 'Required Question 1'!")
 
             self.web_driver.quit()
-            self._display_notification(title="Validation Failed!", message="Required questions are mandotary.")
+            self._display_notification(title="Validation Failed!", message="Required questions are mandatory.")
             sys.exit(1)
+
+    def _fill_required_questions(self, original_emb, index) -> None:
+        """ Fill Mandatory Screener questions """
+        for question, answer in self.glassdoor_input_data["screener questions"]["required questions"].items():
+            q_emb = self.model.encode(question, convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+            if similarity * 100 > 75:
+                match question:
+                    case "Do you speak English?":
+                        self._validate_required_question_1(index=index)
+                    case _:
+                        print(Fore.RED + "Invalid Option!")
+
+    def _validate_other_question_1(self, index: int) -> None:
+        """ Validate the 'Other' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
+        text = self.glassdoor_input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."]
+
+        print(len(text))
+        print(text)
+        print(isinstance(text), list)
+
+        if text:
+            interview_dates = "\n".join(text)
+
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//textarea"))).send_keys(interview_dates)
+
+            print(Fore.YELLOW + "Please list 2-3 dates and time ranges that you could do an interview. is valid.")
+        else:
+            print(Fore.RED + "Invalid Data Format for question 'Please list 2-3 dates and time ranges that you could do an interview.'")
+
+    def _fill_other_questions(self, original_emb, index) -> None:
+        """ Fill Non-Mandatory questions """
+        for question, answer in self.glassdoor_input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."].items():
+            q_emb = self.model.encode(question, convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+            if similarity * 100 > 75:
+                match question:
+                    case "Please list 2-3 dates and time ranges that you could do an interview.":
+                        self._validate_required_question_1(index=index)
+                    case _:
+                        print(Fore.RED + "Invalid Option!")
+            else:
+                print(Fore.RED + "Unable to Proceed with the application")
+
+                self._display_notification(title="Similarity is low!", message=f"Similarity is score is low for this question '{question}'")
+                sys.exit(1)
 
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
         # Get all Questions
+        time.sleep(self.config.SLEEP_TIMEOUT)
         all_questions = self.web_driver.find_elements(By.XPATH, "//div[starts-with(@id, 'q_')]")
 
         for index in range(len(all_questions)):
-            time.sleep(self.config.SLEEP_TIMEOUT)
 
             try:
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span"))
@@ -266,19 +314,14 @@ class GlassDoor:
                 original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
                 for question_type, questions in self.glassdoor_input_data["screener questions"].items():
-                    for question, answer in questions.items():
-                        q_emb = self.model.encode(question, convert_to_tensor=True)
-                        similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
-
-                        if round(similarity * 100, 3) > 75:
-                            match question:
-                                case "Do you speak English?":
-                                    pass
-                                case "Please list 2-3 dates and time ranges that you could do an interview.":
-                                    pass
-                        print(f"Question semantic similarity: {similarity * 100:.2f}")
+                    if question_type.__eq__("required questions"):
+                        self._fill_required_questions(original_emb=original_emb, index=index)
+                    else:
+                        self._fill_other_questions(original_emb=original_emb, index=index)
             except Exception as e:
-                print(Fore.RED + e)
+                print(Fore.RED + f"Error: {e}")
+
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
         sys.exit(1)
 
@@ -318,8 +361,6 @@ class GlassDoor:
 
     def _process_easy_apply(self) -> None:
         """ Automate the Job with 'Easy Apply' button """
-        # time.sleep(self.config.SLEEP_TIMEOUT)
-
         # Click on the "Easy Apply" button
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='easyApply']"))).click()
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -350,10 +391,6 @@ class GlassDoor:
                 self._display_notification(title="Success", message="Applied to Job Successfully")
 
                 break
-            # else:
-            #     self._display_notification(title="Something Went Wrong!", message="We are unable to apply for the job. Please try again later!")
-            #     self.web_driver.quit()
-            #     sys.exit()
 
             time.sleep(self.config.SLEEP_TIMEOUT * 2)
 
@@ -827,32 +864,6 @@ class GlassDoor:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
 
             sys.exit()
-
-    def _collect_user_inputs(self) -> None:
-        """ Collect all user inputs """
-        input_methods: dict = {
-            "Loading Input Data": self._load_glassdoor_input_data,
-            "Save Job": self._save_job_preferences,
-            "Firefox Profile Path": self._read_firefox_profile_path,
-            "Resume Path": self._read_resume_path,
-            "Country": self._read_country,
-            "First Name": self._read_first_name,
-            "Last Name": self._read_last_name,
-            "Address": self._read_street_address,
-            "City": self._read_city,
-            "State": self._read_state,
-            "Postal Code": self._read_postal_code,
-            "Phone Number": self._read_phone_number,
-            "Past Job Title": self._read_past_job_title,
-            "Past Job Company": self._read_past_job_company,
-            "Past Experience": self._read_past_experience,
-            "Commute Preferences": self._read_commute_to_work
-        }
-
-        for label, method in input_methods.items():
-            print(Fore.YELLOW + f"\nSetting {label} ...")
-
-            method()
 
     @staticmethod
     def _read_user_choice() -> int:
