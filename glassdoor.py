@@ -268,13 +268,10 @@ class GlassDoor:
         """ Validate the 'Other' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
         text = self.glassdoor_input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."]
 
-        print(len(text))
-        print(text)
-        print(isinstance(text), list)
-
         if text:
             interview_dates = "\n".join(text)
 
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//textarea"))).clear()
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//textarea"))).send_keys(interview_dates)
 
             print(Fore.YELLOW + "Please list 2-3 dates and time ranges that you could do an interview. is valid.")
@@ -283,29 +280,27 @@ class GlassDoor:
 
     def _fill_other_questions(self, original_emb, index) -> None:
         """ Fill Non-Mandatory questions """
-        for question, answer in self.glassdoor_input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."].items():
+        for question, answer in self.glassdoor_input_data["screener questions"]["other questions"].items():
             q_emb = self.model.encode(question, convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
             if similarity * 100 > 75:
                 match question:
                     case "Please list 2-3 dates and time ranges that you could do an interview.":
-                        self._validate_required_question_1(index=index)
+                        self._validate_other_question_1(index=index)
                     case _:
                         print(Fore.RED + "Invalid Option!")
-            else:
-                print(Fore.RED + "Unable to Proceed with the application")
-
-                self._display_notification(title="Similarity is low!", message=f"Similarity is score is low for this question '{question}'")
-                sys.exit(1)
 
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
         # Get all Questions
         time.sleep(self.config.SLEEP_TIMEOUT)
-        all_questions = self.web_driver.find_elements(By.XPATH, "//div[starts-with(@id, 'q_')]")
 
+        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT * 3).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
+
+        # Get all the Questions, Validate, & Enter the appropriate Answers
         for index in range(len(all_questions)):
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
             try:
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span"))
@@ -321,16 +316,17 @@ class GlassDoor:
             except Exception as e:
                 print(Fore.RED + f"Error: {e}")
 
-            time.sleep(self.config.SLEEP_TIMEOUT)
-
-        sys.exit(1)
+        # Click 'Continue' button
+        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
 
     def _submit_job_application(self) -> None:
         """ Review & Submit the Job Application """
         # Click on the Submit button
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']"))).click()
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']")))
 
     def _fill_contact_information(self) -> None:
         """ Fill the Contact Information form """
@@ -391,6 +387,11 @@ class GlassDoor:
                 self._display_notification(title="Success", message="Applied to Job Successfully")
 
                 break
+            elif "Just a moment" in self.web_driver.title:
+                self._display_notification(title="Unable to Apply for Job",
+                                           message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                self.web_driver.quit()
+                sys.exit()
 
             time.sleep(self.config.SLEEP_TIMEOUT * 2)
 
@@ -508,7 +509,10 @@ class GlassDoor:
 
         # Click on Status
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "rc_select_0"))).send_keys("Applied")
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.ant-select-selector"))).click()
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "//div[contains(@class,'ant-select-item-option-content') and text()='Applied']"))).click()
+        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "rc_select_0"))).send_keys("Applied")
 
         # Change Status to "Applied"
         # time.sleep(self.config.SLEEP_TIMEOUT)
@@ -891,6 +895,7 @@ class GlassDoor:
 
     def main(self) -> None:
         """ Main Method """
+        self._save_job_preferences()
         self._load_pre_train_model()
         self._load_glassdoor_input_data()
 
