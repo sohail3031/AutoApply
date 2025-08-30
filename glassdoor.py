@@ -24,6 +24,7 @@ from selenium.webdriver.support.ui import Select
 from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
+from sentence_transformers import SentenceTransformer, util
 
 
 @dataclass
@@ -90,6 +91,7 @@ class GlassDoor:
         self.config: Config = Config()
         self.user: User = User()
         self.glassdoor_input_data = None
+        self.model: Optional[SentenceTransformer] = None
 
     @staticmethod
     def _show_options() -> None:
@@ -224,6 +226,7 @@ class GlassDoor:
 
         # Enter Past Company Name
         if self._read_past_job_company():
+            time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.glassdoor_input_data["user"]["job history"]["company"].title())
             pyautogui.moveTo(300, 300)
             pyautogui.click()
@@ -233,26 +236,51 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
+    def _validate_required_1(self, index: int) -> None:
+        """ Validate the 'Required' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
+        text = self.glassdoor_input_data["screener questions"]["required questions"].title()
+
+        if text.__eq__("Yes"):
+            pass
+        elif text.__eq__("No"):
+            pass
+        else:
+            print(Fore.RED + "Invalid 'Required Question 1'!")
+
+            self.web_driver.quit()
+            self._display_notification(title="Validation Failed!", message="Required questions are mandotary.")
+            sys.exit(1)
+
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
-        # Get all the text fields
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "mosaic-provider-module-apply-questions-u74ql7 eu4oa1w0")))
-
         # Get all Questions
-        questions = self.web_driver.find_elements(By.CSS_SELECTOR, "div[id^='q_']")
+        all_questions = self.web_driver.find_elements(By.XPATH, "//div[starts-with(@id, 'q_')]")
 
-        for index, question in enumerate(questions, start=0):
+        for index in range(len(all_questions)):
+            time.sleep(self.config.SLEEP_TIMEOUT)
+
             try:
-                label_text = self.web_driver.find_element(By.XPATH, f"(//span[@data-testid='rich-text'])[{index}]").text
+                self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span"))
 
-                self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]"))
+                label_text = self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span").text
+                original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
-                print(f"Text: {label_text}")
+                for question_type, questions in self.glassdoor_input_data["screener questions"].items():
+                    for question, answer in questions.items():
+                        q_emb = self.model.encode(question, convert_to_tensor=True)
+                        similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+                        if round(similarity * 100, 3) > 75:
+                            match question:
+                                case "Do you speak English?":
+                                    pass
+                                case "Please list 2-3 dates and time ranges that you could do an interview.":
+                                    pass
+                        print(f"Question semantic similarity: {similarity * 100:.2f}")
             except Exception as e:
                 print(Fore.RED + e)
 
-            time.sleep(self.config.SLEEP_TIMEOUT)
+        sys.exit(1)
 
     def _submit_job_application(self) -> None:
         """ Review & Submit the Job Application """
@@ -290,7 +318,7 @@ class GlassDoor:
 
     def _process_easy_apply(self) -> None:
         """ Automate the Job with 'Easy Apply' button """
-        time.sleep(self.config.SLEEP_TIMEOUT)
+        # time.sleep(self.config.SLEEP_TIMEOUT)
 
         # Click on the "Easy Apply" button
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='easyApply']"))).click()
@@ -844,8 +872,15 @@ class GlassDoor:
             case _:
                 print(Fore.RED + "Invalid Input! Please enter a valid number.")
 
+    def _load_pre_train_model(self) -> None:
+        """ Loads the pre-train Model """
+        print(Fore.YELLOW + "Loading Pre Train Model ...")
+
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+
     def main(self) -> None:
         """ Main Method """
+        self._load_pre_train_model()
         self._load_glassdoor_input_data()
 
         while True:
