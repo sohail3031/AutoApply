@@ -21,8 +21,8 @@ from selenium.webdriver.support.ui import Select
 from typing import Optional
 from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
-from config import Config
-from careerflow import CareerFlow
+from autoapply.config import Config
+from autoapply.careerflow import CareerFlow
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -710,7 +710,7 @@ class GlassDoor:
     def _load_glassdoor_input_data(self) -> None:
         """ Loads input data from data file """
         try:
-            with open("input_data/glassdoor_input_data.json", "r") as file:
+            with open("../input_data/glassdoor_input_data.json", "r") as file:
                 self.glassdoor_input_data = json.load(file)
         except FileNotFoundError:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
