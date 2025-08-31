@@ -88,7 +88,9 @@ class CareerFlow:
         # Click on Save button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']")))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
+
+        self._display_notification(title="Job Saved Successfully!", message="Job has beed saved at 'CareerFlow' successfully.")
 
     def glassdoor_save_to_career_flow(self) -> None:
         """ Save Job on CareerFlow """

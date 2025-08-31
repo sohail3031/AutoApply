@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 class Config:
     """ Configuration Data """
     EMAIL_PATTERN: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    WEB_DRIVER_TIMEOUT: int = 10
+    WEB_DRIVER_TIMEOUT: int = 20
     GLASSDOOR_LANDING_PAGE: str = str()
     FIREFOX_PROFILE_PATH: str = str()
     FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"

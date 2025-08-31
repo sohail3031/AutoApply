@@ -236,7 +236,7 @@ class GlassDoor:
         # Get all Questions
         time.sleep(self.config.SLEEP_TIMEOUT)
 
-        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT * 2).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
+        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
 
         # Get all the Questions, Validate, & Enter the appropriate Answers
         for index in range(len(all_questions)):
@@ -266,7 +266,7 @@ class GlassDoor:
         # Click on the Submit button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']")))
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']"))).click()
 
     def _fill_contact_information(self) -> None:
         """ Fill the Contact Information form """
@@ -392,7 +392,7 @@ class GlassDoor:
 
                 return
             except TimeoutException as e:
-                print(e.stacktrace)
+                print(f"TimeoutException: {e}")
 
         self._display_notification(title="Unable to Apply for Job", message="Unable to find the Button text to apply for the Job.")
         self.web_driver.quit()
