@@ -35,5 +35,8 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 
 - Colorama (beautiful CLI experience)
 
-JSON-based Configs (user input and question/answer storage)
+- JSON-based Configs (user input and question/answer storage)
+
+---
+
 
