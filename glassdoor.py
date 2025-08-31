@@ -5,11 +5,9 @@ import pycountry
 import os
 import pyperclip
 import pyautogui
-import phonenumbers
 import json
 
 from colorama import init, Fore
-from phonenumbers.phonenumberutil import NumberParseException
 from selenium.common import NoSuchElementException, ElementNotInteractableException
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.firefox.service import Service
@@ -677,13 +675,12 @@ class GlassDoor:
         phone_number = self.glassdoor_input_data["user"]["phone number"]
         region = pycountry.countries.lookup(self.glassdoor_input_data["user"]["address"]["country"]).alpha_2
 
-        try:
-            if phonenumbers.is_valid_number(phonenumbers.parse(phone_number, region)):
-                print(Fore.YELLOW + "Phone Number is valid.")
+        if phone_number:
+            print(Fore.YELLOW + "Phone Number is valid.")
 
-                return True
-        except NumberParseException:
-            print(Fore.RED + "Invalid Phone Number! Plase try again.")
+            return True
+
+        print(Fore.RED + "Invalid Phone Number! Plase try again.")
 
         return False
 
@@ -713,7 +710,7 @@ class GlassDoor:
     def _load_glassdoor_input_data(self) -> None:
         """ Loads input data from data file """
         try:
-            with open("glassdoor_input_data.json", "r") as file:
+            with open("input_data/glassdoor_input_data.json", "r") as file:
                 self.glassdoor_input_data = json.load(file)
         except FileNotFoundError:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")

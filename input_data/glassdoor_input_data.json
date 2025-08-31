@@ -1,0 +1,38 @@
+{
+  "config": {
+    "firefox profile path": "",
+    "resume path": ""
+  },
+
+  "user": {
+    "first name": "",
+    "last name": "",
+    "phone number": "",
+
+    "address": {
+      "street address": "",
+      "city": "",
+      "state": "",
+      "country": "",
+      "postal code": ""
+    },
+
+    "job history": {
+      "title": "",
+      "company": "",
+      "experience": ""
+    }
+  },
+
+  "screener questions": {
+    "required questions": {
+      "Do you speak English?": ""
+    },
+
+    "other questions": {
+      "Please list 2-3 dates and time ranges that you could do an interview.": []
+    }
+  },
+
+  "jobs url": []
+}
