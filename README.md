@@ -39,4 +39,74 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 
 ---
 
+# ⚙️ Setup Instructions
 
+## 1️⃣ Clone the Repository
+
+```bash
+git clone https://github.com/your-username/AutoApply.git
+cd AutoApply
+```
+
+## 2️⃣ Create a Virtual Environment
+```bash
+python -m venv venv
+source venv/bin/activate   # On macOS/Linux
+venv\Scripts\activate      # On Windows
+```
+
+## 3️⃣ Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+## 4️⃣ Configure Input Data
+Edit **.json** and provide answers for the questions.
+
+---
+
+# ▶️ Usage
+
+Run the tool:
+
+```bash
+python auto_apply.py
+```
+
+---
+
+# 🐞 Troubleshooting
+
+**Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
+
+**Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
+
+**Browser compatibility** → Tested on Firefox with latest drivers.
+
+---
+
+# 🤝 Contributing
+
+Contributions are welcome!
+
+- Fork the repo
+
+- Create a new branch (feature/my-feature)
+
+- Submit a pull request 🚀
+
+---
+
+# 📜 License
+
+**MIT License** – free to use, modify, and distribute.
+
+---
+
+# 🙌 Acknowledgements
+
+[**Selenium**](https://www.selenium.dev/) – for browser automation
+
+[**SentenceTransformers**](https://www.sbert.net/) – for semantic text similarity
+
+[**Colorama**](https://pypi.org/project/colorama/) – for colorful CLI
