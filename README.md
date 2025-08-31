@@ -21,3 +21,14 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 
 🔒 Error Handling – Gracefully manages missing elements, incorrect inputs, and timeouts.
 
+🛠️ Tech Stack
+
+Python 3.10+
+
+Selenium WebDriver (browser automation)
+
+SentenceTransformers (semantic question matching)
+
+Colorama (beautiful CLI experience)
+
+JSON-based Configs (user input and question/answer storage)
