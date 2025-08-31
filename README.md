@@ -9,29 +9,31 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 
 # ✨ Features
 
-🤖 Automated Job Applications – Fills in job applications for you on Glassdoor (more platforms coming soon).
+- **🤖 Automated Job Applications** – Fills in job applications for you on Glassdoor (more platforms coming soon).
 
-📝 Smart Screener Question Handling – Answers required and optional questions dynamically from JSON input.
+- **📝 Smart Screener Question Handling** – Answers required and optional questions dynamically from JSON input.
 
-🎯 Semantic Matching – Uses SentenceTransformer embeddings to understand and match questions with stored answers.
+- **🎯 Semantic Matching** – Uses SentenceTransformer embeddings to understand and match questions with stored answers.
 
-📜 Customizable Input Data – Store your answers in a structured JSON file.
+- **📜 Customizable Input Data** – Store your answers in a structured JSON file.
 
-⏳ Lazy Loading & Dynamic Elements – Handles infinite scrolling and dynamically loaded questions using Selenium.
+- **⏳ Lazy Loading & Dynamic Elements** – Handles infinite scrolling and dynamically loaded questions using Selenium.
 
-🎨 Color-Coded CLI – User-friendly terminal interface with colorized messages for better readability.
+- **🎨 Color-Coded CLI** – User-friendly terminal interface with colorized messages for better readability.
 
-🔒 Error Handling – Gracefully manages missing elements, incorrect inputs, and timeouts.
+- **🔒 Error Handling** – Gracefully manages missing elements, incorrect inputs, and timeouts.
 
-🛠️ Tech Stack
+---
 
-Python 3.10+
+# 🛠️ Tech Stack
 
-Selenium WebDriver (browser automation)
+- Python 3.10+
 
-SentenceTransformers (semantic question matching)
+- Selenium WebDriver (browser automation)
 
-Colorama (beautiful CLI experience)
+- SentenceTransformers (semantic question matching)
+
+- Colorama (beautiful CLI experience)
 
 JSON-based Configs (user input and question/answer storage)
 
