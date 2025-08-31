@@ -6,7 +6,6 @@ import os
 import pyperclip
 import pyautogui
 import phonenumbers
-import random
 import json
 
 from colorama import init, Fore
@@ -21,67 +20,10 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 from plyer import notification
 from selenium.webdriver.support.ui import Select
-from dataclasses import dataclass, field
 from typing import Optional
 from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
-
-
-@dataclass
-class Config:
-    """ Configuration Data """
-    EMAIL_PATTERN: str = r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    WEB_DRIVER_TIMEOUT: int = 10
-    GLASSDOOR_LANDING_PAGE: str = str()
-    FIREFOX_PROFILE_PATH: str = str()
-    FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-    SLEEP_TIMEOUT: (int | float) = random.uniform(1, 4)
-    RESUME_PATH: str = str()
-    POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
-    FIREFOX_DRIVER_PATH = "geckodriver-v0.36.0-win64/geckodriver.exe"
-    WEB_DRIVER_SCROLL_BEHAVIOUR: str = "arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});"
-    SAVE_JOB_PREFERENCE: str = str()
-    COMMUTE_OPTIONS: dict = field(default_factory=lambda : {
-        1: "Yes, I can make the commute",
-        2: "Yes, I am planning to relocate",
-        3: "Yes, but I need relocation assistance",
-        4: "No"
-    })
-
-@dataclass
-class ScreenerQuestions:
-    """ Data Class For Screener Questions """
-    ELIGIBLE_TO_WORK: str = str()
-    COMMUTE_TO_WORK: str = str()
-    BACHELORS_OR_DIPLOMA: str = str()
-    MAJOR_OR_PROGRAM: str = str()
-
-@dataclass
-class JobHistory:
-    """ Previous Job Data """
-    title: str = str()
-    company: str = str()
-    experience: int = int()
-    commute: str = str()
-
-@dataclass
-class Address:
-    """ User Address """
-    street_address: str = str()
-    state: str = str()
-    city: str = str()
-    postal_code: str = str()
-    country: str = str()
-
-@dataclass
-class User:
-    """ User Data """
-    first_name: str = str()
-    last_name: str = str()
-    phone_number: str = str()
-    address: Address = field(default_factory=Address)
-    past_job: JobHistory = field(default_factory=JobHistory)
-    screener_questions: ScreenerQuestions = field(default_factory=ScreenerQuestions)
+from config import Config
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -89,7 +31,6 @@ class GlassDoor:
 
         self.web_driver: Optional[Firefox] = None
         self.config: Config = Config()
-        self.user: User = User()
         self.glassdoor_input_data = None
         self.model: Optional[SentenceTransformer] = None
 
@@ -296,7 +237,7 @@ class GlassDoor:
         # Get all Questions
         time.sleep(self.config.SLEEP_TIMEOUT)
 
-        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT * 3).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
+        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
 
         # Get all the Questions, Validate, & Enter the appropriate Answers
         for index in range(len(all_questions)):
@@ -331,24 +272,26 @@ class GlassDoor:
     def _fill_contact_information(self) -> None:
         """ Fill the Contact Information form """
         # Enter First Name
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.user.first_name)
+        if self._read_first_name():
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.glassdoor_input_data["user"]["first name"].title())
 
         # Enter Last Name
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.user.last_name)
+        if self._read_last_name():
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.glassdoor_input_data["user"]["last name"].title())
 
         # Click the Country dropdown
         time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.find_element(By.XPATH, "//button[@aria-haspopup='listbox']").click()
 
-        # Find & elect the Country
+        # Find & select the Country
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.user.address.country}')]"))).click()
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.glassdoor_input_data['user']['address']['country']}')]"))).click()
 
         # Enter Phone Number
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.user.phone_number)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.glassdoor_input_data["user"]["phone number"])
 
         # Click on the Continue button
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -483,7 +426,7 @@ class GlassDoor:
                                self.web_driver.current_url,
                                self.web_driver.find_element(By.XPATH, "//div[@data-test='detailSalary']").text,
                                self.web_driver.find_element(By.XPATH, "//div[@data-test='location']").text,
-                               self.web_driver.find_element(By.CSS_SELECTOR, ".Section_sectionComponent__nRsB2.Section_bottomMargin__Fka0J").text]
+                               self.web_driver.find_element(By.XPATH, "//div[contains(@class,'JobDetails_jobDescription')]").text]
 
     def _fill_career_flow_job_form(self, job_data: list[str]) -> None:
         """ Fills the Job Details at CareerFlow """
@@ -523,18 +466,18 @@ class GlassDoor:
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_salary"))).send_keys(job_data[3])
 
         # Enter Job Location
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "basic_location"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_location"))).send_keys(job_data[4])
 
         # Enter Job Description
+        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.CSS_SELECTOR, "#basic_description .ql-editor"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "basic_description"))
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_description"))).send_keys(job_data[5])
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#basic_description .ql-editor"))).send_keys(job_data[5])
 
         # Click on Save button
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
 
     def _save_to_career_flow(self) -> None:
@@ -802,25 +745,27 @@ class GlassDoor:
             except ValueError:
                 print(Fore.RED + "Invalid Option! Please try again.")
 
-    def _read_first_name(self) -> None:
+    def _read_first_name(self) -> bool:
         """ Read First Name & Validate """
-        while True:
-            self.user.first_name = input(Fore.BLUE + "Enter First Name: ").title()
+        first_name = self.glassdoor_input_data["user"]["first name"]
 
-            if bool(self.user.first_name) and self.user.first_name.replace(" ", "").isalpha():
-                break
+        if bool(first_name) and first_name.replace(" ", "").isalpha():
+            return True
 
-            print(Fore.RED + "Invalid First Name! Plase try again.")
+        print(Fore.RED + "Invalid First Name!")
 
-    def _read_last_name(self) -> None:
+        return False
+
+    def _read_last_name(self) -> bool:
         """ Read Last Name & Validate """
-        while True:
-            self.user.last_name = input(Fore.BLUE + "Enter Last Name: ").title()
+        last_name = self.glassdoor_input_data["user"]["last name"]
 
-            if bool(self.user.last_name) and self.user.last_name.replace(" ", "").isalpha():
-                break
+        if bool(last_name) and last_name.replace(" ", "").isalpha():
+            return True
 
-            print(Fore.RED + "Invalid Last Name! Plase try again.")
+        print(Fore.RED + "Invalid Last Name!")
+
+        return False
 
     def _read_phone_number(self) -> None:
         """ Reads Phone Number & Validate """
@@ -838,7 +783,7 @@ class GlassDoor:
 
     def _save_job_preferences(self) -> None:
         """ Read the Save Preference """
-        print(Fore.MAGENTA + "Where do want to save the Job?")
+        print(Fore.MAGENTA + "Do want to save the Job?")
 
         save_option: dict[int: str] = {
             1: "Save to CareerFlow",
