@@ -1,4 +1,3 @@
-import random
 import time
 
 from typing import Optional
@@ -8,14 +7,10 @@ from colorama import init, Fore
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
-
-class Config:
-    SLEEP_TIMEOUT: (int | float) = random.uniform(1, 4)
-    WEB_DRIVER_TIMEOUT: int = 10
-    WEB_DRIVER_SCROLL_BEHAVIOUR: str = "arguments[0].scrollIntoView({behaviour: 'smooth', block: 'center'});"
+from config import Config
 
 class CareerFlow:
-    def __init__(self, web_driver) -> None:
+    def __init__(self, web_driver: Optional[Firefox]) -> None:
         init(autoreset=True)
 
         self.web_driver: Optional[Firefox] = web_driver
@@ -29,7 +24,7 @@ class CareerFlow:
         except Exception as e:
             print(Fore.RED + f"Unable to show notifications. {e}")
 
-    def _read_job_details(self) -> list[str]:
+    def _glassdoor_read_job_details(self) -> list[str]:
         """
             Fetch all the required data to save Job at CareerFlow
             :return: Return a 'List' of 'String' of Job Data
@@ -48,7 +43,7 @@ class CareerFlow:
                                self.web_driver.find_element(By.XPATH, "//div[@data-test='location']").text,
                                self.web_driver.find_element(By.XPATH, "//div[contains(@class,'JobDetails_jobDescription')]").text]
 
-    def _fill_career_flow_job_form(self, job_data: list[str]) -> None:
+    def _glassdoor_fill_career_flow_job_form(self, job_data: list[str]) -> None:
         """ Fills the Job Details at CareerFlow """
         # Click on "Job Tracker"
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -93,9 +88,9 @@ class CareerFlow:
         # Click on Save button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']")))
 
-    def _save_to_career_flow(self) -> None:
+    def glassdoor_save_to_career_flow(self) -> None:
         """ Save Job on CareerFlow """
         # Open CareerFlow Page
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -108,9 +103,9 @@ class CareerFlow:
 
             return
 
-        job_data: list[str] = self._read_job_details()
+        job_data: list[str] = self._glassdoor_read_job_details()
 
         # Switch to CareerFlow page
         self.web_driver.switch_to.window(self.web_driver.window_handles[2])
 
-        self._fill_career_flow_job_form(job_data)
+        self._glassdoor_fill_career_flow_job_form(job_data)

@@ -9,23 +9,34 @@ class AutoApply:
 
     @staticmethod
     def _show_welcome_message() -> None:
-        print(Fore.CYAN + """👋 Welcome to AutoApply – Your Personal Job Application Assistant!
-            \nWe're here to simplify your job search by automatically applying to relevant opportunities on your behalf. No more endless scrolling or repetitive clicks – just smart, efficient applications tailored to your preferences.
-            
-            ✅ Fast.  
-            ✅ Accurate.  
-            ✅ Hassle-Free.
-            
-            Let’s get started and land your next opportunity faster! 🚀
-            """)
+        """ Display a welcome message to the user """
+        message_lines: list[str] = [
+            "👋 Welcome to AutoApply – Your Personal Job Application Assistant!",
+            "",
+            "We're here to simplify your job search by automatically applying to relevant opportunities on your behalf.",
+            "No more endless scrolling or repetitive clicks – just smart, efficient applications tailored to your preferences.",
+            "",
+            "✅ Fast",
+            "✅ Accurate",
+            "✅ Hassle-Free",
+            "",
+            "Let’s get started and land your next opportunity faster! 🚀"
+        ]
+
+        print(Fore.CYAN + "\n".join(message_lines))
 
     @staticmethod
     def _show_options() -> None:
-        print(Fore.MAGENTA +
-              "\n0. Exit"
-              "\n1. GlassDoor")
+        """ Display available options to the user """
+        options: list[str] = ["Exit", "GlassDoor"]
+
+        print(Fore.MAGENTA + "Available Options: ")
+
+        for index, option in enumerate(options):
+            print(Fore.MAGENTA + f"{index}. {option}")
 
     def main(self) -> None:
+        """ Main method """
         self._show_welcome_message()
 
         while True:

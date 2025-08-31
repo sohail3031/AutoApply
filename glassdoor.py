@@ -24,6 +24,7 @@ from typing import Optional
 from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
 from config import Config
+from careerflow import CareerFlow
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -37,8 +38,6 @@ class GlassDoor:
     @staticmethod
     def _show_options() -> None:
         """ Display different options to Apply for a Job """
-        print(Fore.GREEN + "\n***** GlassDoor Job Application *****")
-
         options: list[str] = ["Exit", "Apply Using URL", "Apply with Job Search"]
 
         for index, value in enumerate(options):
@@ -237,7 +236,7 @@ class GlassDoor:
         # Get all Questions
         time.sleep(self.config.SLEEP_TIMEOUT)
 
-        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
+        all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT * 2).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
 
         # Get all the Questions, Validate, & Enter the appropriate Answers
         for index in range(len(all_questions)):
@@ -286,16 +285,18 @@ class GlassDoor:
         self.web_driver.find_element(By.XPATH, "//button[@aria-haspopup='listbox']").click()
 
         # Find & select the Country
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.glassdoor_input_data['user']['address']['country']}')]"))).click()
+        if self._read_country():
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.glassdoor_input_data['user']['address']['country']}')]"))).click()
 
         # Enter Phone Number
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.glassdoor_input_data["user"]["phone number"])
+        if self._read_phone_number():
+            time.sleep(self.config.SLEEP_TIMEOUT)
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.glassdoor_input_data["user"]["phone number"])
 
         # Click on the Continue button
-        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
+        time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[data-testid='continue-button']"))).click()
 
     def _process_easy_apply(self) -> None:
@@ -331,12 +332,11 @@ class GlassDoor:
 
                 break
             elif "Just a moment" in self.web_driver.title:
-                self._display_notification(title="Unable to Apply for Job",
-                                           message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                 self.web_driver.quit()
                 sys.exit()
 
-            time.sleep(self.config.SLEEP_TIMEOUT * 2)
+            time.sleep(self.config.SLEEP_TIMEOUT)
 
     @staticmethod
     def _read_job_url(number: int) -> str:
@@ -428,83 +428,11 @@ class GlassDoor:
                                self.web_driver.find_element(By.XPATH, "//div[@data-test='location']").text,
                                self.web_driver.find_element(By.XPATH, "//div[contains(@class,'JobDetails_jobDescription')]").text]
 
-    def _fill_career_flow_job_form(self, job_data: list[str]) -> None:
-        """ Fills the Job Details at CareerFlow """
-        # Click on "Job Tracker"
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Job Tracker']"))).click()
-
-        # Click on "Add Job"
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Add Job']"))).click()
-
-        # Enter Job title
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_jobtitle"))).send_keys(job_data[0])
-
-        # Enter Company name
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_companyName"))).send_keys(job_data[1])
-
-        # Enter Job URL
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_joburl"))).send_keys(job_data[2])
-
-        # Click on Status
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "div.ant-select-selector"))).click()
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "//div[contains(@class,'ant-select-item-option-content') and text()='Applied']"))).click()
-        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "rc_select_0"))).send_keys("Applied")
-
-        # Change Status to "Applied"
-        # time.sleep(self.config.SLEEP_TIMEOUT)
-        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[contains(@class,'ant-select-item-option')][.='Applied']"))).click()
-
-        # Enter Salary
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_salary"))).send_keys(job_data[3])
-
-        # Enter Job Location
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "basic_location"))
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_location"))).send_keys(job_data[4])
-
-        # Enter Job Description
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.CSS_SELECTOR, "#basic_description .ql-editor"))
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#basic_description .ql-editor"))).send_keys(job_data[5])
-
-        # Click on Save button
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
-
-    def _save_to_career_flow(self) -> None:
-        """ Save Job on CareerFlow """
-        # Open CareerFlow Page
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        self.web_driver.execute_script("window.open('https://app.careerflow.ai/board');")
-
-        # Get the Title of the Page
-        time.sleep(self.config.SLEEP_TIMEOUT)
-        if "Login" in self.web_driver.title:
-            self._display_notification(title="Unable to Save Job to CareerFlow", message="Please Login at CareerFlow to save the Job.")
-
-            return
-
-        job_data: list[str] = self._read_job_details()
-
-        # Switch to CareerFlow page
-        self.web_driver.switch_to.window(self.web_driver.window_handles[2])
-
-        self._fill_career_flow_job_form(job_data)
-
     def _save_job(self) -> None:
         """ Save's Job as per user preference """
         match self.config.SAVE_JOB_PREFERENCE:
             case "Save to CareerFlow":
-                self._save_to_career_flow()
+                CareerFlow(web_driver=self.web_driver).glassdoor_save_to_career_flow()
             case "Don't Save":
                 print(Fore.YELLOW + "Uer chose not to save Job.")
             case _:
@@ -617,17 +545,11 @@ class GlassDoor:
                 print(Fore.YELLOW + "Country is valid.")
 
                 return True
-
-            print(Fore.RED + "Can't Validate Country! Please try Again")
-            self._display_notification(title="Validation Failed!", message="Invalid Country! Please try again.")
-            
-            return False
-            
         except LookupError:
             print(Fore.RED + "Can't Validate Country! Please try Again")
             self._display_notification(title="Validation Failed!", message="Invalid Country! Please try again.")
 
-            return False
+        return False
 
     def _read_postal_code(self) -> bool:
         """ Read Postal Code & Validate """
@@ -708,48 +630,29 @@ class GlassDoor:
 
         return False
 
-    def _read_past_experience(self) -> None:
+    def _read_past_experience(self) -> bool:
         """ Read past Work Experience & Validate """
-        while True:
-            try:
-                self.user.past_job.experience = int(input(Fore.BLUE + "Enter Experience: "))
+        try:
+            experience = self.glassdoor_input_data["user"]["job history"]["experience"]
 
-                if self.user.past_job.experience >= 0:
-                    break
+            if experience >= 0:
+                print(Fore.YELLOW + "Past Experiece is valid.")
 
-                print(Fore.RED + "Invalid Input! Experience should be greater than 0.")
-            except ValueError:
-                print(Fore.RED + "Invalid Input! PLease try again.")
+                return True
 
-    def _show_commute_options(self) -> None:
-        """ Display Commute to Work or Relocation options for the Job """
-        print(Fore.MAGENTA + "Will you be able to reliably commute or relocate to Waterloo, ON for this job?")
+            print(Fore.RED + "Invalid Input! Experience should be greater than 0.")
+        except ValueError:
+            print(Fore.RED + "Invalid Input! PLease try again.")
 
-        for key, value in self.config.COMMUTE_OPTIONS.items():
-            print(Fore.MAGENTA + f"{key}. {value}")
-
-    def _read_commute_to_work(self) -> None:
-        """ Prompt user Commute to Work options """
-        while True:
-            self._show_commute_options()
-
-            try:
-                choice: int = int(input(Fore.BLUE + "\nSelect Commute to Work Option: "))
-
-                if choice in self.config.COMMUTE_OPTIONS:
-                    self.user.past_job.commute = self.config.COMMUTE_OPTIONS[choice]
-
-                    break
-
-                print(Fore.RED + "Invalid Input! Please select a number between 1 & 4.")
-            except ValueError:
-                print(Fore.RED + "Invalid Option! Please try again.")
+        return False
 
     def _read_first_name(self) -> bool:
         """ Read First Name & Validate """
         first_name = self.glassdoor_input_data["user"]["first name"]
 
         if bool(first_name) and first_name.replace(" ", "").isalpha():
+            print(Fore.YELLOW + "First Name is valid.")
+
             return True
 
         print(Fore.RED + "Invalid First Name!")
@@ -761,25 +664,28 @@ class GlassDoor:
         last_name = self.glassdoor_input_data["user"]["last name"]
 
         if bool(last_name) and last_name.replace(" ", "").isalpha():
+            print(Fore.YELLOW + "Last Name is valid")
+
             return True
 
         print(Fore.RED + "Invalid Last Name!")
 
         return False
 
-    def _read_phone_number(self) -> None:
+    def _read_phone_number(self) -> bool:
         """ Reads Phone Number & Validate """
-        while True:
-            self.user.phone_number = input(Fore.BLUE + "Enter Phone Number: ")
-            region = pycountry.countries.lookup(self.user.address.country).alpha_2
+        phone_number = self.glassdoor_input_data["user"]["phone number"]
+        region = pycountry.countries.lookup(self.glassdoor_input_data["user"]["address"]["country"]).alpha_2
 
-            try:
-                if phonenumbers.is_valid_number(phonenumbers.parse(self.user.phone_number, region)):
-                    break
-            except NumberParseException:
-                pass
+        try:
+            if phonenumbers.is_valid_number(phonenumbers.parse(phone_number, region)):
+                print(Fore.YELLOW + "Phone Number is valid.")
 
+                return True
+        except NumberParseException:
             print(Fore.RED + "Invalid Phone Number! Plase try again.")
+
+        return False
 
     def _save_job_preferences(self) -> None:
         """ Read the Save Preference """
@@ -795,7 +701,7 @@ class GlassDoor:
 
         while True:
             try:
-                option: int = int(input(Fore.BLUE + "\nSelect your Preference to Save teh Job: "))
+                option: int = int(input(Fore.BLUE + "\nSelect your Preference to Save the Job: "))
 
                 if option in range(1, 3):
                     self.config.SAVE_JOB_PREFERENCE = save_option[option]
@@ -840,6 +746,8 @@ class GlassDoor:
 
     def main(self) -> None:
         """ Main Method """
+        print(Fore.GREEN + "\n***** GlassDoor Job Application *****")
+
         self._save_job_preferences()
         self._load_pre_train_model()
         self._load_glassdoor_input_data()

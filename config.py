@@ -10,7 +10,7 @@ class Config:
     GLASSDOOR_LANDING_PAGE: str = str()
     FIREFOX_PROFILE_PATH: str = str()
     FIREFOX_PROFILE_PATH_PATTERN: str = r"^C:\\Users\\[^\\]+\\AppData\\Roaming\\Mozilla\\Firefox\\Profiles\\[^\\]+$"
-    SLEEP_TIMEOUT: (int | float) = random.uniform(1, 4)
+    SLEEP_TIMEOUT: (int | float) = random.uniform(2, 5)
     RESUME_PATH: str = str()
     POSTAL_CODE_PATTERN: str = r"^(?!.*\s.*\s)[A-Za-z0-9\s]{4,7}$"
     FIREFOX_DRIVER_PATH = "geckodriver-v0.36.0-win64/geckodriver.exe"
