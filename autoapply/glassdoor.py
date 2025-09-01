@@ -30,7 +30,7 @@ class GlassDoor:
 
         self.web_driver: Optional[Firefox] = None
         self.config: Config = Config()
-        self.glassdoor_input_data = None
+        self.input_data = None
         self.model: Optional[SentenceTransformer] = None
 
     @staticmethod
@@ -44,7 +44,7 @@ class GlassDoor:
     def _initialize_web_driver(self) -> None:
         """ Initialize Firefox Web Driver """
         if self._read_firefox_profile_path():
-            filefox_profile_path = self.glassdoor_input_data["config"]["firefox profile path"]
+            filefox_profile_path = self.input_data["config"]["firefox profile path"]
 
             # Configure Firefox options
             options: Options = Options()
@@ -74,6 +74,8 @@ class GlassDoor:
 
     def _fill_address_form(self) -> None:
         """ Fill in or Update the User Address """
+        print(Fore.YELLOW + "Filling Address Form")
+
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         # Select Country
@@ -83,37 +85,41 @@ class GlassDoor:
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
 
             select = Select(self.web_driver.find_element(By.ID, "location-fields-country-list"))
-            select.select_by_visible_text(self.glassdoor_input_data["user"]["address"]["country"].title())
+            select.select_by_visible_text(self.input_data["user"]["address"]["country"].title())
 
         # Enter Postal Code
         if self._read_postal_code():
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-postal-code-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["postal code"].upper())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self.input_data["user"]["address"]["postal code"].upper())
 
         # Enter City & State
         if self._read_city() or self._read_state():
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-locality-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["city"].title() + ", " + self.glassdoor_input_data["user"]["address"]["state"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(self.input_data["user"]["address"]["city"].title() + ", " + self.input_data["user"]["address"]["state"].title())
 
         # Enter Street Address
         if self._read_street_address():
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-address-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(self.glassdoor_input_data["user"]["address"]["street address"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(self.input_data["user"]["address"]["street address"].title())
 
         # Click Continue button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
 
+        print(Fore.YELLOW + "Filled Address Form")
+
     def _upload_resume(self) -> None:
         """
             Upload the Resume for the current Job
-            The Upload Resume option will open file explorer to upload a file and Selenium doesn't have that functionality
-            To bypass this issue, 'PyAutoGUI' has been used
+            The Upload Resume option will open file explorer to upload a file, and Selenium doesn't have that functionality
+            To bypass this issue 'PyAutoGUI' has been used
          """
+        print(Fore.YELLOW + "Filling Resume Form")
+
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         if self._read_resume_path():
@@ -152,31 +158,37 @@ class GlassDoor:
             self._display_notification(title="Validation Failed!", message="File Not Found!")
             sys.exit(1)
 
+        print(Fore.YELLOW + "Filled Resume Form")
+
     def _fill_work_experience(self) -> None:
         """ Fill the relevant past Job Experience """
+        print(Fore.YELLOW + "Filling Work Experience Form")
+
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         # Enter Past Job Title
         if self._read_past_job_title():
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.glassdoor_input_data["user"]["job history"]["title"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.input_data["user"]["job history"]["title"].title())
             pyautogui.moveTo(300, 300)
             pyautogui.click()
 
         # Enter Past Company Name
         if self._read_past_job_company():
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.glassdoor_input_data["user"]["job history"]["company"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.input_data["user"]["job history"]["company"].title())
             pyautogui.moveTo(300, 300)
             pyautogui.click()
 
         # Click on the "Continue" button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))).click()
+        self.web_driver.execute_script("arguments[0].click();", WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-testid='continue-button']"))))
+
+        print(Fore.YELLOW + "Filled Work Experience Form")
 
     def _validate_required_question_1(self, index: int) -> None:
         """ Validate the 'Required' question 'Do you speak English?' """
-        text = self.glassdoor_input_data["screener questions"]["required questions"]["Do you speak English?"].title()
+        text = self.input_data["screener questions"]["required questions"]["Do you speak English?"].title()
 
         if text.__eq__("Yes") or text.__eq__("No"):
             print(Fore.YELLOW + "Do you speak English? is valid.")
@@ -191,7 +203,7 @@ class GlassDoor:
 
     def _fill_required_questions(self, original_emb, index) -> None:
         """ Fill Mandatory Screener questions """
-        for question, answer in self.glassdoor_input_data["screener questions"]["required questions"].items():
+        for question, answer in self.input_data["screener questions"]["required questions"].items():
             q_emb = self.model.encode(question, convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
@@ -204,7 +216,7 @@ class GlassDoor:
 
     def _validate_other_question_1(self, index: int) -> None:
         """ Validate the 'Other' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
-        text = self.glassdoor_input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."]
+        text = self.input_data["screener questions"]["other questions"]["Please list 2-3 dates and time ranges that you could do an interview."]
 
         if text:
             interview_dates = "\n".join(text)
@@ -218,7 +230,7 @@ class GlassDoor:
 
     def _fill_other_questions(self, original_emb, index) -> None:
         """ Fill Non-Mandatory questions """
-        for question, answer in self.glassdoor_input_data["screener questions"]["other questions"].items():
+        for question, answer in self.input_data["screener questions"]["other questions"].items():
             q_emb = self.model.encode(question, convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
@@ -231,6 +243,8 @@ class GlassDoor:
 
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
+        print(Fore.YELLOW + "Filling Screener Questions Form")
+
         # Get all Questions
         time.sleep(self.config.SLEEP_TIMEOUT)
 
@@ -246,7 +260,7 @@ class GlassDoor:
                 label_text = self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span").text
                 original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
-                for question_type, questions in self.glassdoor_input_data["screener questions"].items():
+                for question_type, questions in self.input_data["screener questions"].items():
                     if question_type.__eq__("required questions"):
                         self._fill_required_questions(original_emb=original_emb, index=index)
                     else:
@@ -259,24 +273,32 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Continue']"))).click()
 
+        print(Fore.YELLOW + "Filled Screener Questions Form")
+
     def _submit_job_application(self) -> None:
         """ Review & Submit the Job Application """
+        print(Fore.YELLOW + "Filling Final Form")
+
         # Click on the Submit button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Submit your application']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button/span[text()='Submit your application']"))).click()
 
+        print(Fore.YELLOW + "Filled Final Form")
+
     def _fill_contact_information(self) -> None:
         """ Fill the Contact Information form """
+        print(Fore.YELLOW + "Filling Contact Information Form")
+
         # Enter First Name
         if self._read_first_name():
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.glassdoor_input_data["user"]["first name"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.input_data["user"]["first name"].title())
 
         # Enter Last Name
         if self._read_last_name():
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.glassdoor_input_data["user"]["last name"].title())
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.input_data["user"]["last name"].title())
 
         # Click the Country dropdown
         time.sleep(self.config.SLEEP_TIMEOUT)
@@ -285,17 +307,19 @@ class GlassDoor:
         # Find & select the Country
         if self._read_country():
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.glassdoor_input_data['user']['address']['country']}')]"))).click()
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.input_data['user']['address']['country']}')]"))).click()
 
         # Enter Phone Number
         if self._read_phone_number():
             time.sleep(self.config.SLEEP_TIMEOUT)
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.glassdoor_input_data["user"]["phone number"])
+            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.input_data["user"]["phone number"])
 
         # Click on the Continue button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[data-testid='continue-button']"))).click()
+
+        print(Fore.YELLOW + "Filled Contact Information Form")
 
     def _process_easy_apply(self) -> None:
         """ Automate the Job with 'Easy Apply' button """
@@ -308,33 +332,29 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         while True:
-            page_title: str = self.web_driver.title
+            time.sleep(self.config.WEB_DRIVER_TIMEOUT)
 
-            if "Just a moment" in page_title:
+            page_title: str = self.web_driver.title.lower()
+
+            if "just a moment" in page_title:
                 self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                 self.web_driver.quit()
                 sys.exit()
-            elif "Add or update your address" in page_title:
+            elif "add or update your address" in page_title:
                 self._fill_address_form()
-            elif "Upload a resume for this application" in page_title:
+            elif "upload a resume for this application" in page_title:
                 self._upload_resume()
-            elif "Add relevant work experience information" in page_title:
+            elif "add relevant work experience information" in page_title:
                 self._fill_work_experience()
-            elif "Answer Screener Questions from the employer" in page_title:
+            elif "answer screener questions from the employer" in page_title:
                 self._fill_screener_questions()
-            elif "Add or update your contact information" in page_title:
+            elif "add or update your contact information" in page_title:
                 self._fill_contact_information()
-            elif "Review the contents of this job application" in page_title:
+            elif "review the contents of this job application" in page_title:
                 self._submit_job_application()
                 self._display_notification(title="Success", message="Applied to Job Successfully")
 
                 break
-            elif "Just a moment" in self.web_driver.title:
-                self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
-                self.web_driver.quit()
-                sys.exit()
-
-            time.sleep(self.config.SLEEP_TIMEOUT)
 
     @staticmethod
     def _read_job_url(number: int) -> str:
@@ -370,14 +390,15 @@ class GlassDoor:
     def _handle_application_button(self) -> None:
         """ Detects the Job Application button available on the page """
         button_selectors: dict[str: str] = {
-            "Applied": "(//button[.//span[normalize-space()='Applied']])[1]",
             "Easy Apply": "//button[@data-test='easyApply']",
+            "Applied": "(//button[.//span[normalize-space()='Applied']])[1]",
             "Apply on employer site": "//button[@data-test='applyButton']"
         }
 
         for text, xpath in button_selectors.items():
             try:
-                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, xpath)))
+                time.sleep(self.config.SLEEP_TIMEOUT)
+                self.web_driver.find_element(By.XPATH, xpath)
 
                 if text.__eq__("Applied"):
                     self._display_notification(title="Can't Apply to this Job!", message="You have already applied to this Job.")
@@ -412,7 +433,7 @@ class GlassDoor:
             Fetch all the required data to save Job at CareerFlow
             :return: Return a 'List' of 'String' of Job Data
         """
-        # Switch to the Job Posing page & copy the Data
+        # Switch to the Job Posing page and copy the Data
         time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.switch_to.window(self.web_driver.window_handles[0])
 
@@ -439,7 +460,7 @@ class GlassDoor:
     def _is_job_active(self) -> bool:
         """
             Checks whether the Job posting is Active
-            :return: Returns 'True" if available else 'False'
+            :return: Returns 'True' if available else 'False'
         """
         print(Fore.YELLOW + "\nChecking if the Job is Active")
 
@@ -456,10 +477,10 @@ class GlassDoor:
             :return:  Returns List of Strings
         """
         jobs_url: list[str] = []
-        number_of_jobs_to_apply: int = len(self.glassdoor_input_data["jobs url"])
+        number_of_jobs_to_apply: int = len(self.input_data["jobs url"])
 
         for index in range(number_of_jobs_to_apply):
-            url: str = self.glassdoor_input_data["jobs url"][index]
+            url: str = self.input_data["jobs url"][index]
 
             if url.startswith("http") and url.__contains__("glassdoor"):
                 jobs_url.append(url)
@@ -492,6 +513,8 @@ class GlassDoor:
                         sys.exit()
 
                     self._handle_application_button()
+                    self.web_driver.quit()
+                    time.sleep(self.config.SLEEP_TIMEOUT)
                 else:
                     print(Fore.RED + "User is Not Logged In!")
 
@@ -504,7 +527,7 @@ class GlassDoor:
 
     def _read_firefox_profile_path(self) -> bool:
         """ Read Firefox Profile Path & Validate """
-        firefox_profile_path = self.glassdoor_input_data["config"]["firefox profile path"]
+        firefox_profile_path = self.input_data["config"]["firefox profile path"]
         pattern: re = re.compile(self.config.FIREFOX_PROFILE_PATH_PATTERN, re.IGNORECASE)
 
         if pattern.match(firefox_profile_path):
@@ -518,7 +541,7 @@ class GlassDoor:
 
     def _read_resume_path(self) -> bool:
         """ Read Resume Path & Validate """
-        self.config.RESUME_PATH = self.glassdoor_input_data["config"]["resume path"]
+        self.config.RESUME_PATH = self.input_data["config"]["resume path"]
 
         if os.path.isfile(self.config.RESUME_PATH):
             if ".pdf" in self.config.RESUME_PATH or ".docx" in self.config.RESUME_PATH:
@@ -536,7 +559,7 @@ class GlassDoor:
 
     def _read_country(self) -> bool:
         """ Read Country & Validate """
-        country: str = self.glassdoor_input_data["user"]["address"]["country"].title()
+        country: str = self.input_data["user"]["address"]["country"].title()
 
         try:
             if pycountry.countries.lookup(country) is not None:
@@ -551,10 +574,9 @@ class GlassDoor:
 
     def _read_postal_code(self) -> bool:
         """ Read Postal Code & Validate """
-        postal_code = self.glassdoor_input_data["user"]["address"]["postal code"].upper()
-        pattern: re = re.compile(self.config.POSTAL_CODE_PATTERN, re.IGNORECASE)
+        postal_code = self.input_data["user"]["address"]["postal code"].upper()
 
-        if pattern.match(postal_code):
+        if postal_code:
             print(Fore.YELLOW + "Postal Code is valid.")
 
             return True
@@ -565,7 +587,7 @@ class GlassDoor:
 
     def _read_city(self) -> bool:
         """ Read City & Validate """
-        city = self.glassdoor_input_data["user"]["address"]["city"].title()
+        city = self.input_data["user"]["address"]["city"].title()
 
         if bool(city.strip()) and city.replace(" ", "").isalpha():
             print(Fore.YELLOW + "City is valid.")
@@ -578,7 +600,7 @@ class GlassDoor:
 
     def _read_state(self) -> bool:
         """ Read State & Validate """
-        state = self.glassdoor_input_data["user"]["address"]["state"]
+        state = self.input_data["user"]["address"]["state"]
 
         if bool(state) and state.replace(" ", "").isalpha():
             print(Fore.YELLOW + "State is Valid")
@@ -591,7 +613,7 @@ class GlassDoor:
 
     def _read_street_address(self) -> bool:
         """ Read Street Address & validate """
-        street_address = self.glassdoor_input_data["user"]["address"]["street address"]
+        street_address = self.input_data["user"]["address"]["street address"]
 
         if bool(street_address) and any(i.isdigit() for i in street_address) and any(i.isalpha() for i in street_address):
             print(Fore.YELLOW + "Postal Code is valid.")
@@ -604,7 +626,7 @@ class GlassDoor:
 
     def _read_past_job_title(self) -> bool:
         """ Read previous Job Title & Validate """
-        job_title = self.glassdoor_input_data["user"]["job history"]["title"]
+        job_title = self.input_data["user"]["job history"]["title"]
 
         if bool(job_title.strip()):
             print(Fore.YELLOW + "Past Job Title is valid.")
@@ -617,7 +639,7 @@ class GlassDoor:
 
     def _read_past_job_company(self) -> bool:
         """ Read previous Company & Validate """
-        company = self.glassdoor_input_data["user"]["job history"]["company"]
+        company = self.input_data["user"]["job history"]["company"]
 
         if bool(company):
             print(Fore.YELLOW + "Past Company is valid.")
@@ -631,10 +653,10 @@ class GlassDoor:
     def _read_past_experience(self) -> bool:
         """ Read past Work Experience & Validate """
         try:
-            experience = self.glassdoor_input_data["user"]["job history"]["experience"]
+            experience = self.input_data["user"]["job history"]["experience"]
 
             if experience >= 0:
-                print(Fore.YELLOW + "Past Experiece is valid.")
+                print(Fore.YELLOW + "Past Experience is valid.")
 
                 return True
 
@@ -646,7 +668,7 @@ class GlassDoor:
 
     def _read_first_name(self) -> bool:
         """ Read First Name & Validate """
-        first_name = self.glassdoor_input_data["user"]["first name"]
+        first_name = self.input_data["user"]["first name"]
 
         if bool(first_name) and first_name.replace(" ", "").isalpha():
             print(Fore.YELLOW + "First Name is valid.")
@@ -659,7 +681,7 @@ class GlassDoor:
 
     def _read_last_name(self) -> bool:
         """ Read Last Name & Validate """
-        last_name = self.glassdoor_input_data["user"]["last name"]
+        last_name = self.input_data["user"]["last name"]
 
         if bool(last_name) and last_name.replace(" ", "").isalpha():
             print(Fore.YELLOW + "Last Name is valid")
@@ -672,8 +694,7 @@ class GlassDoor:
 
     def _read_phone_number(self) -> bool:
         """ Reads Phone Number & Validate """
-        phone_number = self.glassdoor_input_data["user"]["phone number"]
-        region = pycountry.countries.lookup(self.glassdoor_input_data["user"]["address"]["country"]).alpha_2
+        phone_number = self.input_data["user"]["phone number"]
 
         if phone_number:
             print(Fore.YELLOW + "Phone Number is valid.")
@@ -710,10 +731,11 @@ class GlassDoor:
     def _load_glassdoor_input_data(self) -> None:
         """ Loads input data from data file """
         try:
-            with open("../input_data/glassdoor_input_data.json", "r") as file:
-                self.glassdoor_input_data = json.load(file)
-        except FileNotFoundError:
+            with open("./input_data/glassdoor_input_data.json", "r") as file:
+                self.input_data = json.load(file)
+        except FileNotFoundError as e:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
+            print(e)
 
             sys.exit()
 
