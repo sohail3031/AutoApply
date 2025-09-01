@@ -99,6 +99,6 @@ Contributions are welcome!
 
 # 🙌 Acknowledgements
 
--[**Selenium**](https://www.selenium.dev/) – for browser automation
--[**SentenceTransformers**](https://www.sbert.net/) – for semantic text similarity
--[**Colorama**](https://pypi.org/project/colorama/) – for colorful CLI
+- [**Selenium**](https://www.selenium.dev/) – for browser automation
+- [**SentenceTransformers**](https://www.sbert.net/) – for semantic text similarity
+- [**Colorama**](https://pypi.org/project/colorama/) – for colorful CLI
