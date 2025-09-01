@@ -30,13 +30,9 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 # 🛠️ Tech Stack
 
 - Python 3.10+
-
 - Selenium WebDriver (browser automation)
-
 - SentenceTransformers (semantic question matching)
-
 - Colorama (beautiful CLI experience)
-
 - JSON-based Configs (user input and question/answer storage)
 
 ---
@@ -80,9 +76,7 @@ python auto_apply.py
 # 🐞 Troubleshooting
 
 **Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
-
 **Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
-
 **Browser compatibility** → Tested on Firefox with latest drivers.
 
 ---
@@ -92,9 +86,7 @@ python auto_apply.py
 Contributions are welcome!
 
 - Fork the repo
-
 - Create a new branch (feature/my-feature)
-
 - Submit a pull request 🚀
 
 ---
