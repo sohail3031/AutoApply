@@ -152,14 +152,14 @@ class GlassDoor:
                         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
                         self.web_driver.find_element(By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]").click()
 
+                        print(Fore.YELLOW + "Filled Resume Form")
+
                         break
                 except ElementNotInteractableException:
                     print(Fore.RED + f"Failed to click button #{index}")
         else:
             self._display_notification(title="Validation Failed!", message="File Not Found!")
             sys.exit(1)
-
-        print(Fore.YELLOW + "Filled Resume Form")
 
     def _fill_work_experience(self) -> None:
         """ Fill the relevant past Job Experience """
@@ -340,7 +340,7 @@ class GlassDoor:
             if "just a moment" in page_title:
                 self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                 self.web_driver.quit()
-                sys.exit()
+                sys.exit(1)
             elif "add or update your address" in page_title:
                 self._fill_address_form()
             elif "upload a resume for this application" in page_title:
@@ -416,7 +416,7 @@ class GlassDoor:
 
         self._display_notification(title="Unable to Apply for Job", message="Unable to find the Button text to apply for the Job.")
         self.web_driver.quit()
-        sys.exit()
+        sys.exit(1)
 
     def _check_user_login(self) -> bool:
         """ Checks if the user is Logged """
@@ -561,6 +561,13 @@ class GlassDoor:
                 WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-location-search-suggestions li"))).send_keys(Keys.DOWN)
                 WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-location-search-suggestions li"))).send_keys(Keys.ENTER)
                 time.sleep(self.config.SLEEP_TIMEOUT)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='expand-filters'][2]"))).click()
+                time.sleep(self.config.SLEEP_TIMEOUT)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "toggleSwitch-APPLICATION_TYPE"))).click()
+                time.sleep(self.config.SLEEP_TIMEOUT)
+                self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-test='apply-search-filters']"))
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@data-test='apply-search-filters']"))).click()
+                time.sleep(self.config.SLEEP_TIMEOUT)
 
                 jobs = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//li[@data-test='jobListing']")))
 
@@ -569,13 +576,21 @@ class GlassDoor:
                     time.sleep(self.config.SLEEP_TIMEOUT)
                     WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@data-test='jobListing'][{index}]"))).click()
 
+                    self._handle_application_button()
 
+                    if index.__eq__(number_of_jobs):
+                        print(Fore.YELLOW + "Jobs Applied Successfully!")
+
+                        break
+
+                self.web_driver.quit()
+                sys.exit(1)
             else:
                 print(Fore.RED + "User is not Logged In!")
 
                 self._display_notification(title="User is not Logged In!", message="Please Log In to apply for the Jobs.")
                 self.web_driver.quit()
-                sys.exit()
+                sys.exit(1)
         else:
             self._display_notification(title="Validation Failed!", message="Data in 'search jobs' is compulsory and should be invalid format.")
             sys.exit(1)
@@ -603,7 +618,7 @@ class GlassDoor:
                     if "Just a moment" in self.web_driver.title:
                         self._display_notification(title="Unable to Apply for Job", message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
                         self.web_driver.quit()
-                        sys.exit()
+                        sys.exit(1)
 
                     self._handle_application_button()
                     self.web_driver.quit()
@@ -612,7 +627,7 @@ class GlassDoor:
                     print(Fore.RED + "User is Not Logged In!")
 
                     self._display_notification(title="Unable to Apply for Job", message="User is not Logged In. Please Login and try again.")
-                    sys.exit()
+                    sys.exit(1)
             else:
                 print(Fore.RED + "Job has expired!")
 
@@ -830,7 +845,7 @@ class GlassDoor:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
             print(e)
 
-            sys.exit()
+            sys.exit(1)
 
     @staticmethod
     def _read_user_choice() -> int:
