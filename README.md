@@ -10,18 +10,20 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 # ✨ Features
 
 - **🤖 Automated Job Applications** – Fills in job applications for you on Glassdoor (more platforms coming soon).
-
 - **📝 Smart Screener Question Handling** – Answers required and optional questions dynamically from JSON input.
-
 - **🎯 Semantic Matching** – Uses SentenceTransformer embeddings to understand and match questions with stored answers.
-
 - **📜 Customizable Input Data** – Store your answers in a structured JSON file.
-
 - **⏳ Lazy Loading & Dynamic Elements** – Handles infinite scrolling and dynamically loaded questions using Selenium.
-
 - **🎨 Color-Coded CLI** – User-friendly terminal interface with colorized messages for better readability.
-
 - **🔒 Error Handling** – Gracefully manages missing elements, incorrect inputs, and timeouts.
+- **📊 Application Tracker** – Keep a log of applied jobs and track statuses.
+
+---
+
+# 🚀 Upcoming Features
+
+- **🔍 Search Feature** - Add feature where user can search for the job and apply.
+- **🔍 Multi-Platform Support** – Extend automation to LinkedIn, Indeed, and more job boards.
 
 ---
 
