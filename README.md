@@ -24,6 +24,7 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 
 - **🔍 Search Feature** - Add feature where user can search for the job and apply for GlassDoor.
 - **🔍 Multi-Platform Support** – Extend automation to LinkedIn, Indeed, and more job boards.
+- **🌐 Headless Mode** – Faster, resource-friendly execution without opening a visible browser window.
 
 ---
 
