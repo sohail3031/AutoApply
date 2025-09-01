@@ -10,31 +10,29 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 # ✨ Features
 
 - **🤖 Automated Job Applications** – Fills in job applications for you on Glassdoor (more platforms coming soon).
-
 - **📝 Smart Screener Question Handling** – Answers required and optional questions dynamically from JSON input.
-
 - **🎯 Semantic Matching** – Uses SentenceTransformer embeddings to understand and match questions with stored answers.
-
 - **📜 Customizable Input Data** – Store your answers in a structured JSON file.
-
 - **⏳ Lazy Loading & Dynamic Elements** – Handles infinite scrolling and dynamically loaded questions using Selenium.
-
 - **🎨 Color-Coded CLI** – User-friendly terminal interface with colorized messages for better readability.
-
 - **🔒 Error Handling** – Gracefully manages missing elements, incorrect inputs, and timeouts.
+- **📊 Application Tracker** – Keep a log of applied jobs and track statuses.
+
+---
+
+# 🚀 Upcoming Features
+
+- **🔍 Search Feature** - Add feature where user can search for the job and apply for GlassDoor.
+- **🔍 Multi-Platform Support** – Extend automation to LinkedIn, Indeed, and more job boards.
 
 ---
 
 # 🛠️ Tech Stack
 
 - Python 3.10+
-
 - Selenium WebDriver (browser automation)
-
 - SentenceTransformers (semantic question matching)
-
 - Colorama (beautiful CLI experience)
-
 - JSON-based Configs (user input and question/answer storage)
 
 ---
@@ -77,11 +75,9 @@ python auto_apply.py
 
 # 🐞 Troubleshooting
 
-**Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
-
-**Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
-
-**Browser compatibility** → Tested on Firefox with latest drivers.
+- **Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
+- **Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
+- **Browser compatibility** → Tested on Firefox with latest drivers.
 
 ---
 
@@ -90,9 +86,7 @@ python auto_apply.py
 Contributions are welcome!
 
 - Fork the repo
-
 - Create a new branch (feature/my-feature)
-
 - Submit a pull request 🚀
 
 ---
@@ -105,8 +99,6 @@ Contributions are welcome!
 
 # 🙌 Acknowledgements
 
-[**Selenium**](https://www.selenium.dev/) – for browser automation
-
-[**SentenceTransformers**](https://www.sbert.net/) – for semantic text similarity
-
-[**Colorama**](https://pypi.org/project/colorama/) – for colorful CLI
+- [**Selenium**](https://www.selenium.dev/) – for browser automation
+- [**SentenceTransformers**](https://www.sbert.net/) – for semantic text similarity
+- [**Colorama**](https://pypi.org/project/colorama/) – for colorful CLI
