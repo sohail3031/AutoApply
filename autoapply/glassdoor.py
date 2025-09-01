@@ -23,6 +23,7 @@ from pathlib import Path
 from sentence_transformers import SentenceTransformer, util
 from autoapply.config import Config
 from autoapply.careerflow import CareerFlow
+from selenium.webdriver.common.keys import Keys
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -487,6 +488,98 @@ class GlassDoor:
 
         return jobs_url
 
+    def _read_number_of_search_jobs(self) -> bool:
+        """ Read number of Jobs to apply using GlassDoor Search """
+        try:
+            number_of_jobs = int(self.input_data["search jobs"]["number of jobs"])
+
+            if number_of_jobs in range(1, 31):
+                print(Fore.YELLOW + "Number of Jobs are valid.")
+
+                return True
+
+            print(Fore.RED + "Number of Jobs should be in between 1 and 30.")
+        except ValueError:
+            print(Fore.RED + "Invalid Number of Jobs! The value should be an integer.")
+
+        return False
+
+    def _read_search_job_title(self) -> bool:
+        """ Read Job title for Search Jobs """
+        job_title = self.input_data["search jobs"]["job title"]
+
+        if job_title:
+            print(Fore.YELLOW + "Search Job title is valid.")
+
+            return True
+
+        print(Fore.RED + "Invalid Search Job title!")
+
+        return False
+
+    def _read_search_job_location(self) -> bool:
+        """ Read Job location for Search Jobs """
+        job_location = self.input_data["search jobs"]["job location"]
+
+        if job_location:
+            print(Fore.YELLOW + "Search Job location is valid.")
+
+            return True
+
+        print(Fore.RED + "Invalid Search Job location!")
+
+        return False
+
+    def _read_glassdoor_url(self) -> bool:
+        """ Read GlassDoor Landing page URL """
+        url = self.input_data["search jobs"]["glassdoor url"]
+
+        if url.startswith("http") and url.__contains__("glassdoor"):
+            print(Fore.YELLOW + "GlassDoor Landing Page URL is valid.")
+
+            return True
+
+        print(Fore.RED + "Invalid GlassDoor Landing Page URL!")
+
+        return False
+
+    def _apply_to_job_via_search(self) -> None:
+        """ Apply to Jobs using GlassDoor Search """
+        if self._read_number_of_search_jobs() and self._read_search_job_title() and self._read_search_job_location() and self._read_glassdoor_url():
+            number_of_jobs = int(self.input_data["search jobs"]["number of jobs"])
+
+            self._initialize_web_driver()
+            self.web_driver.get(self.input_data["search jobs"]["glassdoor url"])
+
+            if self.web_driver.title.lower().__contains__("community"):
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='signedInGlobalNav']//a[text()='Jobs']"))).click()
+                time.sleep(self.config.WEB_DRIVER_TIMEOUT)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "searchBar-jobTitle"))).send_keys(self.input_data["search jobs"]["job title"].title())
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-jobTitle-search-suggestions li"))).send_keys(Keys.DOWN)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-jobTitle-search-suggestions li"))).send_keys(Keys.ENTER)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "searchBar-location"))).send_keys(self.input_data["search jobs"]["job location"].title())
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-location-search-suggestions li"))).send_keys(Keys.DOWN)
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#searchBar-location-search-suggestions li"))).send_keys(Keys.ENTER)
+                time.sleep(self.config.SLEEP_TIMEOUT)
+
+                jobs = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//li[@data-test='jobListing']")))
+
+                for index, job in enumerate(jobs, start=1):
+                    self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, f"//li[@data-test='jobListing'][{index}]"))
+                    time.sleep(self.config.SLEEP_TIMEOUT)
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@data-test='jobListing'][{index}]"))).click()
+
+
+            else:
+                print(Fore.RED + "User is not Logged In!")
+
+                self._display_notification(title="User is not Logged In!", message="Please Log In to apply for the Jobs.")
+                self.web_driver.quit()
+                sys.exit()
+        else:
+            self._display_notification(title="Validation Failed!", message="Data in 'search jobs' is compulsory and should be invalid format.")
+            sys.exit(1)
+
     def _apply_to_job_via_url(self) -> None:
         """ Apply to Jobs using GlassDoor URL """
         jobs_url: list[str] = self._validate_job_url()
@@ -754,6 +847,8 @@ class GlassDoor:
         match choice:
             case 1:
                 self._apply_to_job_via_url()
+            case 2:
+                self._apply_to_job_via_search()
             case _:
                 print(Fore.RED + "Invalid Input! Please enter a valid number.")
 
