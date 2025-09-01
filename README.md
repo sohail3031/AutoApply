@@ -75,9 +75,9 @@ python auto_apply.py
 
 # 🐞 Troubleshooting
 
-**Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
-**Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
-**Browser compatibility** → Tested on Firefox with latest drivers.
+- **Element not found errors** → increase WEB_DRIVER_TIMEOUT in config.py.
+- **Lazy loading issues** → AutoApply already scrolls, but you may need to increase sleep time.
+- **Browser compatibility** → Tested on Firefox with latest drivers.
 
 ---
 
