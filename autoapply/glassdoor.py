@@ -187,33 +187,66 @@ class GlassDoor:
 
         print(Fore.YELLOW + "Filled Work Experience Form")
 
-    def _validate_required_question_1(self, index: int) -> None:
-        """ Validate the 'Required' question 'Do you speak English?' """
-        text = self.input_data["screener questions"]["required questions"]["Do you speak English?"].title()
+    @staticmethod
+    def _validate_yes_no_questions(answer) -> bool:
+        """ Validate 'Yes' & 'No' questions """
+        return True if isinstance(answer, str) and answer.__eq__("yes") or answer.__eq__("no") else False
 
-        if text.__eq__("Yes") or text.__eq__("No"):
-            print(Fore.YELLOW + "Do you speak English? is valid.")
+    @staticmethod
+    def _validate_textarea_questions(answer) -> bool:
+        """ Validate 'TextArea' questions """
+        return True if isinstance(answer, (list, str)) and bool(answer) else False
 
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[text()='{text}']]/input"))).click()
-        else:
-            print(Fore.RED + "Invalid 'Required Question 1'!")
+    @staticmethod
+    def _validate_text_field_questions(answer) -> bool:
+        """ Validate 'Text Field' questions """
+        return True if isinstance(answer, str) and bool(answer) else False
 
-            self.web_driver.quit()
-            self._display_notification(title="Validation Failed!", message="Required questions are mandatory.")
-            sys.exit(1)
-
-    def _fill_required_questions(self, original_emb, index) -> None:
+    def _fill_required_yes_no_questions(self, original_emb, index) -> None:
         """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["required questions"].items():
+        for question, answer in self.input_data["screener questions"]["required questions"]["yes & no"].items():
+            if question.__eq__("_comment"):
+                continue
+
+            if self._validate_yes_no_questions(answer=answer):
+                q_emb = self.model.encode(question, convert_to_tensor=True)
+                similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+                if similarity * 100 > 75:
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[text()='{answer.title()}']]/input"))).click()
+                else:
+                    print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
+            else:
+                print(Fore.RED + "Invalid 'Required Yes & No Question'!")
+
+                self._display_notification(title="Validation Failed!", message="Required 'Yes' & 'No' questions are mandatory. And value be either 'Yes' & 'No'.")
+                self.web_driver.quit()
+                sys.exit(1)
+
+    def _fill_required_textarea_questions(self, original_emb, index) -> None:
+        """ Fill Mandatory Screener questions """
+        for question, answer in self.input_data["screener questions"]["required questions"]["textarea"].items():
+            if question.__eq__("_comment"):
+                continue
+
             q_emb = self.model.encode(question, convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
             if similarity * 100 > 75:
-                match question:
-                    case "Do you speak English?":
-                        self._validate_required_question_1(index=index)
-                    case _:
-                        print(Fore.RED + "Invalid Option!")
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/textarea"))).send_keys(answer.title())
+            else:
+                print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
+
+    def _fill_required_text_field_questions(self, original_emb, index) -> None:
+        """ Fill Mandatory Screener questions """
+        for question, answer in self.input_data["screener questions"]["required questions"]["textarea"].items():
+            q_emb = self.model.encode(question, convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+            if similarity * 100 > 75:
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/input"))).send_keys(answer.title())
+            else:
+                print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
 
     def _validate_other_question_1(self, index: int) -> None:
         """ Validate the 'Other' question 'Please list 2-3 dates and time ranges that you could do an interview.' """
@@ -229,18 +262,39 @@ class GlassDoor:
         else:
             print(Fore.RED + "Invalid Data Format for question 'Please list 2-3 dates and time ranges that you could do an interview.'")
 
-    def _fill_other_questions(self, original_emb, index) -> None:
+    def _fill_other_yes_no_questions(self, original_emb, index) -> None:
         """ Fill Non-Mandatory questions """
-        for question, answer in self.input_data["screener questions"]["other questions"].items():
+        for question, answer in self.input_data["screener questions"]["other questions"]["yes & no"].items():
+            if self._validate_yes_no_questions(answer=answer):
+                q_emb = self.model.encode(question, convert_to_tensor=True)
+                similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+                if similarity * 100 > 75:
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[text()='{answer.title()}']]/input"))).click()
+                else:
+                    print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
+
+    def _fill_other_textarea_questions(self, original_emb, index) -> None:
+        """ Fill Mandatory Screener questions """
+        for question, answer in self.input_data["screener questions"]["other questions"]["textarea"].items():
             q_emb = self.model.encode(question, convert_to_tensor=True)
             similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
             if similarity * 100 > 75:
-                match question:
-                    case "Please list 2-3 dates and time ranges that you could do an interview.":
-                        self._validate_other_question_1(index=index)
-                    case _:
-                        print(Fore.RED + "Invalid Option!")
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/textarea"))).send_keys(answer.title())
+            else:
+                print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
+
+    def _fill_other_text_field_questions(self, original_emb, index) -> None:
+        """ Fill Mandatory Screener questions """
+        for question, answer in self.input_data["screener questions"]["other questions"]["textarea"].items():
+            q_emb = self.model.encode(question, convert_to_tensor=True)
+            similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
+
+            if similarity * 100 > 75:
+                WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/input"))).send_keys(answer.title())
+            else:
+                print(Fore.YELLOW + f"Similarity Score is {similarity} for question {question}")
 
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
@@ -261,11 +315,21 @@ class GlassDoor:
                 label_text = self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span").text
                 original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
-                for question_type, questions in self.input_data["screener questions"].items():
-                    if question_type.__eq__("required questions"):
-                        self._fill_required_questions(original_emb=original_emb, index=index)
+                for question_type, questions in self.input_data["screener questions"]["required questions"].items():
+                    if question_type.__eq__("yes & no"):
+                        self._fill_required_yes_no_questions(original_emb=original_emb, index=index)
+                    elif question_type.__eq__("textarea"):
+                        self._fill_required_textarea_questions(original_emb=original_emb, index=index)
                     else:
-                        self._fill_other_questions(original_emb=original_emb, index=index)
+                        self._fill_required_text_field_questions(original_emb=original_emb, index=index)
+
+                for question_type, questions in self.input_data["screener questions"]["other questions"].items():
+                    if question_type.__eq__("yes & no"):
+                        self._fill_other_yes_no_questions(original_emb=original_emb, index=index)
+                    elif question_type.__eq__("textarea"):
+                        self._fill_required_textarea_questions(original_emb=original_emb, index=index)
+                    else:
+                        self._fill_required_text_field_questions(original_emb=original_emb, index=index)
             except Exception as e:
                 print(Fore.RED + f"Error: {e}")
 
