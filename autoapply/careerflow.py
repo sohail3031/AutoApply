@@ -85,10 +85,13 @@ class CareerFlow:
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#basic_description .ql-editor"))).send_keys(job_data[5])
 
-        # Click on Save button
+        # Click on the Save button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
+
+        # Closing the current window
+        self.web_driver.close()
 
         self._display_notification(title="Job Saved Successfully!", message="Job has beed saved at 'CareerFlow' successfully.")
 
@@ -108,6 +111,6 @@ class CareerFlow:
         job_data: list[str] = self._glassdoor_read_job_details()
 
         # Switch to CareerFlow page
-        self.web_driver.switch_to.window(self.web_driver.window_handles[2])
+        self.web_driver.switch_to.window(self.web_driver.window_handles[1])
 
         self._glassdoor_fill_career_flow_job_form(job_data)
