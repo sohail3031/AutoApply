@@ -29,7 +29,7 @@ class CareerFlow:
             Fetch all the required data to save Job at CareerFlow
             :return: Return a 'List' of 'String' of Job Data
         """
-        # Switch to the Job Posing page & copy the Data
+        # Switch to the Job Posing page and copy the Data
         time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.switch_to.window(self.web_driver.window_handles[0])
 
@@ -92,6 +92,7 @@ class CareerFlow:
 
         # Closing the current window
         self.web_driver.close()
+        self.web_driver.switch_to.window(self.web_driver.window_handles[0])
 
         self._display_notification(title="Job Saved Successfully!", message="Job has beed saved at 'CareerFlow' successfully.")
 

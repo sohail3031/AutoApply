@@ -6,6 +6,8 @@ import os
 import pyperclip
 import pyautogui
 import json
+import openpyxl
+import uuid
 
 from colorama import init, Fore
 from selenium.common import NoSuchElementException, ElementNotInteractableException
@@ -33,6 +35,8 @@ class GlassDoor:
         self.config: Config = Config()
         self.input_data = None
         self.model: Optional[SentenceTransformer] = None
+        self.applied_jobs = None
+        self.active_sheet = None
 
     @staticmethod
     def _show_options() -> None:
@@ -80,7 +84,7 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         # Select Country
-        if self._read_country():
+        if self._read_country(country=self.input_data["user"]["address"]["country"]):
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[span[text()='Change']]"))).click()
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-country-list")))
@@ -89,22 +93,38 @@ class GlassDoor:
             select.select_by_visible_text(self.input_data["user"]["address"]["country"].title())
 
         # Enter Postal Code
-        if self._read_postal_code():
+        if bool(self.input_data["user"]["address"]["postal code"]):
+            print(Fore.YELLOW + "Postal Code is valid.")
+
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-postal-code-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-postal-code-input"))).send_keys(self.input_data["user"]["address"]["postal code"].upper())
+        else:
+            print(Fore.RED + "Invalid Postal Code!")
 
         # Enter City & State
-        if self._read_city() or self._read_state():
+        if bool(self.input_data["user"]["address"]["city"]) or bool(self.input_data["user"]["address"]["state"]):
+            print(Fore.YELLOW + "City is valid.")
+            print(Fore.YELLOW + "State is Valid")
+
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-locality-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-locality-input"))).send_keys(self.input_data["user"]["address"]["city"].title() + ", " + self.input_data["user"]["address"]["state"].title())
+        else:
+            if not bool(self.input_data["user"]["address"]["city"]):
+                print(Fore.RED + "Invalid City Name!")
+            if bool(self.input_data["user"]["address"]["state"]):
+                print(Fore.RED + "Invalid State Name!")
 
         # Enter Street Address
-        if self._read_street_address():
+        if bool(self.input_data["user"]["address"]["street address"]):
+            print(Fore.YELLOW + "Postal Code is valid.")
+
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.ID, "location-fields-address-input"))
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "location-fields-address-input"))).send_keys(self.input_data["user"]["address"]["street address"].title())
+        else:
+            print(Fore.RED + "Invalid Street Address!")
 
         # Click Continue button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
@@ -168,17 +188,25 @@ class GlassDoor:
         time.sleep(self.config.SLEEP_TIMEOUT)
 
         # Enter Past Job Title
-        if self._read_past_job_title():
+        if bool(self.input_data["user"]["job history"]["title"]):
+            print(Fore.YELLOW + "Past Job Title is valid.")
+
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "job-title-input"))).send_keys(self.input_data["user"]["job history"]["title"].title())
             pyautogui.moveTo(300, 300)
             pyautogui.click()
+        else:
+            print(Fore.RED + "Invalid Previous Job Title! Please try again.")
 
         # Enter Past Company Name
-        if self._read_past_job_company():
+        if bool(self.input_data["user"]["job history"]["company"]):
+            print(Fore.YELLOW + "Past Company is valid.")
+
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "company-name-input"))).send_keys(self.input_data["user"]["job history"]["company"].title())
             pyautogui.moveTo(300, 300)
             pyautogui.click()
+        else:
+            print(Fore.RED + "Invalid Previous Company Name!")
 
         # Click on the "Continue" button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='continue-button']"))
@@ -187,24 +215,9 @@ class GlassDoor:
 
         print(Fore.YELLOW + "Filled Work Experience Form")
 
-    @staticmethod
-    def _validate_radio_button_questions(answer) -> bool:
-        """ Validate 'Yes' & 'No' questions """
-        return True if isinstance(answer, str) and answer.__eq__("yes") or answer.__eq__("no") else False
-
-    @staticmethod
-    def _validate_textarea_questions(answer) -> bool:
-        """ Validate 'TextArea' questions """
-        return True if isinstance(answer, (list, str)) and bool(answer) else False
-
-    @staticmethod
-    def _validate_text_field_questions(answer) -> bool:
-        """ Validate 'Text Field' questions """
-        return True if isinstance(answer, str) and bool(answer) else False
-
-    def _fill_required_radio_button_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["required questions"]["radio button"].items():
+    def _fill_radio_checkbox_questions(self, original_emb, index, section, question_type) -> None:
+        """ Fill 'Radio Button & Checkbox' Screener questions """
+        for question, answer in self.input_data["screener questions"][section][question_type].items():
             if question.__eq__("_comment"):
                 continue
 
@@ -212,18 +225,19 @@ class GlassDoor:
                 q_emb = self.model.encode(question, convert_to_tensor=True)
                 similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                if similarity * 100 > 70:
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[contains(text()='{answer.title()}')]]/input"))).click()
+                if similarity * 100 > 60:
+                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[contains(translate(normalize-space(text()),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'{answer.lower()}')]]/input"))).click()
             else:
-                print(Fore.RED + "'Required Yes or No Question'!")
+                if section.__eq__("required questions"):
+                    print(Fore.RED + "'Required Yes or No Question'!")
 
-                self._display_notification(title="Validation Failed!", message="Required 'Yes' or 'No' questions are mandatory. And value be either 'Yes' or 'No'.")
-                self.web_driver.quit()
-                sys.exit(1)
+                    self._display_notification(title="Validation Failed!", message="Required 'Yes' or 'No' questions are mandatory. And value be either 'Yes' or 'No'.")
+                    self.web_driver.quit()
+                    sys.exit(1)
 
-    def _fill_required_textarea_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["required questions"]["textarea"].items():
+    def _fill_textarea_questions(self, original_emb, index, section) -> None:
+        """ Fill 'TextArea' Screener questions """
+        for question, answer in self.input_data["screener questions"][section]["textarea"].items():
             if question.__eq__("_comment"):
                 continue
 
@@ -233,18 +247,19 @@ class GlassDoor:
                 q_emb = self.model.encode(question, convert_to_tensor=True)
                 similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                if similarity * 100 > 70:
+                if similarity * 100 > 60:
                     WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/textarea"))).send_keys(answer.title())
             else:
-                print(Fore.RED + "'Required TextArea Question'!")
+                if section.__eq__("required questions"):
+                    print(Fore.RED + "'Required TextArea Question'!")
 
-                self._display_notification(title="Validation Failed!", message="Required 'TestArea' questions are mandatory. And value be either 'String' or 'List of String'.")
-                self.web_driver.quit()
-                sys.exit(1)
+                    self._display_notification(title="Validation Failed!", message="Required 'TestArea' questions are mandatory. And value be either 'String' or 'List of String'.")
+                    self.web_driver.quit()
+                    sys.exit(1)
 
-    def _fill_required_text_field_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["required questions"]["text field"].items():
+    def _fill_text_field_questions(self, original_emb, index, section) -> None:
+        """ Fill 'Text Field' Screener questions """
+        for question, answer in self.input_data["screener questions"][section]["text field"].items():
             if question.__eq__("_comment"):
                 continue
 
@@ -254,18 +269,19 @@ class GlassDoor:
                 q_emb = self.model.encode(question, convert_to_tensor=True)
                 similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                if similarity * 100 > 70:
+                if similarity * 100 > 60:
                     WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/input"))).send_keys(answer if question.__eq__("LinkedIn URL") else answer.title())
             else:
-                print(Fore.RED + "'Required Text Field Question'!")
+                if section.__eq__("required questions"):
+                    print(Fore.RED + "'Required Text Field Question'!")
 
-                self._display_notification(title="Validation Failed!", message="Required 'Text Field' questions are mandatory. And value be either 'String'.")
-                self.web_driver.quit()
-                sys.exit(1)
+                    self._display_notification(title="Validation Failed!", message="Required 'Text Field' questions are mandatory. And value be either 'String'.")
+                    self.web_driver.quit()
+                    sys.exit(1)
 
-    def _fill_required_dropdown_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["required questions"]["text field"].items():
+    def _fill_dropdown_questions(self, original_emb, index, section) -> None:
+        """ Fill 'DropDown' Screener questions """
+        for question, answer in self.input_data["screener questions"][section]["dropdown"].items():
             if question.__eq__("_comment"):
                 continue
 
@@ -275,59 +291,15 @@ class GlassDoor:
                 q_emb = self.model.encode(question, convert_to_tensor=True)
                 similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                if similarity * 100 > 70:
+                if similarity * 100 > 60:
                     Select(self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//select")).select_by_visible_text(answer.title())
             else:
-                print(Fore.RED + "'Required Text Field Question'!")
+                if section.__eq__("required questions"):
+                    print(Fore.RED + "'Required Text Field Question'!")
 
-                self._display_notification(title="Validation Failed!", message="Required 'Text Field' questions are mandatory. And value be either 'String'.")
-                self.web_driver.quit()
-                sys.exit(1)
-
-    def _fill_other_radio_button_questions(self, original_emb, index) -> None:
-        """ Fill Non-Mandatory questions """
-        for question, answer in self.input_data["screener questions"]["other questions"]["radio button"].items():
-            if question.__eq__("_comment"):
-                continue
-
-            if self._validate_radio_button_questions(answer=answer):
-                print(Fore.YELLOW + f"{question}: {answer}")
-
-                q_emb = self.model.encode(question, convert_to_tensor=True)
-                similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
-
-                if similarity * 100 > 70:
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[text()='{answer.title()}']]/input"))).click()
-
-    def _fill_other_textarea_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["other questions"]["textarea"].items():
-            if question.__eq__("_comment"):
-                continue
-
-            if self._validate_textarea_questions(answer=answer):
-                print(Fore.YELLOW + f"{question}: {answer}")
-
-                q_emb = self.model.encode(question, convert_to_tensor=True)
-                similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
-
-                if similarity * 100 > 70:
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/textarea"))).send_keys(answer.title())
-
-    def _fill_other_text_field_questions(self, original_emb, index) -> None:
-        """ Fill Mandatory Screener questions """
-        for question, answer in self.input_data["screener questions"]["other questions"]["text field"].items():
-            if question.__eq__("_comment"):
-                continue
-
-            if self._validate_text_field_questions(answer=answer):
-                print(Fore.YELLOW + f"{question}: {answer}")
-
-                q_emb = self.model.encode(question, convert_to_tensor=True)
-                similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
-
-                if similarity * 100 > 70:
-                    WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/input"))).send_keys(answer.title())
+                    self._display_notification(title="Validation Failed!", message="Required 'Text Field' questions are mandatory. And value be either 'String'.")
+                    self.web_driver.quit()
+                    sys.exit(1)
 
     def _fill_screener_questions(self) -> None:
         """ Answer Screener Questions during an Application process """
@@ -348,23 +320,16 @@ class GlassDoor:
                 label_text = self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span").text
                 original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
-                for question_type, questions in self.input_data["screener questions"]["required questions"].items():
-                    if question_type.__eq__("radio button") or question_type.__eq__("checkbox"):
-                        self._fill_required_radio_button_questions(original_emb=original_emb, index=index)
-                    elif question_type.__eq__("textarea"):
-                        self._fill_required_textarea_questions(original_emb=original_emb, index=index)
-                    elif question_type.__eq__("text field"):
-                        self._fill_required_text_field_questions(original_emb=original_emb, index=index)
-                    else:
-                        self._fill_required_dropdown_questions(original_emb=original_emb, index=index)
-
-                for question_type, questions in self.input_data["screener questions"]["other questions"].items():
-                    if question_type.__eq__("radio button"):
-                        self._fill_other_radio_button_questions(original_emb=original_emb, index=index)
-                    elif question_type.__eq__("textarea"):
-                        self._fill_other_textarea_questions(original_emb=original_emb, index=index)
-                    else:
-                        self._fill_other_text_field_questions(original_emb=original_emb, index=index)
+                for section in ["required questions", "other questions"]:
+                    for question_type, questions in self.input_data["screener questions"][section].items():
+                        if question_type.__eq__("radio button") or question_type.__eq__("checkbox"):
+                            self._fill_radio_checkbox_questions(original_emb=original_emb, index=index, section=section, question_type=question_type)
+                        elif question_type.__eq__("textarea"):
+                            self._fill_textarea_questions(original_emb=original_emb, index=index, section=section)
+                        elif question_type.__eq__("text field"):
+                            self._fill_text_field_questions(original_emb=original_emb, index=index, section=section)
+                        else:
+                            self._fill_dropdown_questions(original_emb=original_emb, index=index, section=section)
             except Exception as e:
                 print(Fore.RED + f"Error: {e}")
 
@@ -391,28 +356,38 @@ class GlassDoor:
         print(Fore.YELLOW + "Filling Contact Information Form")
 
         # Enter First Name
-        if self._read_first_name():
+        if bool(self.input_data["user"]["first name"]) and self.input_data["user"]["first name"].replace(" ", "").isalpha():
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-first-name-input'"))).send_keys(self.input_data["user"]["first name"].title())
+        else:
+            print(Fore.RED + "Invalid First Name!")
 
         # Enter Last Name
-        if self._read_last_name():
+        if bool(self.input_data["user"]["last name"]) and self.input_data["user"]["last name"].replace(" ", "").isalpha():
+            print(Fore.YELLOW + "Last Name is valid")
+
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@data-testid='name-fields-last-name-input']"))).send_keys(self.input_data["user"]["last name"].title())
+        else:
+            print(Fore.RED + "Invalid Last Name!")
 
         # Click the Country dropdown
         time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.find_element(By.XPATH, "//button[@aria-haspopup='listbox']").click()
 
         # Find & select the Country
-        if self._read_country():
+        if self._read_country(self.input_data['user']['address']['country']):
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//li[@role='option']//span[contains(text(),'{self.input_data['user']['address']['country']}')]"))).click()
 
         # Enter Phone Number
-        if self._read_phone_number():
+        if bool(self.input_data["user"]["phone number"]):
+            print(Fore.YELLOW + "Phone Number is valid.")
+
             time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.input_data["user"]["phone number"])
+        else:
+            print(Fore.RED + "Invalid Phone Number!")
 
         # Click on the Continue button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
@@ -452,12 +427,14 @@ class GlassDoor:
                 self._fill_contact_information()
             elif "review the contents of this job application" in page_title:
                 self._submit_job_application()
+                time.sleep(self.config.SLEEP_TIMEOUT)
                 self._display_notification(title="Success", message="Applied to Job Successfully")
 
                 break
 
         # Closing the current window
         self.web_driver.close()
+        self.web_driver.switch_to.window(self.web_driver.window_handles[0])
 
     @staticmethod
     def _read_job_url(number: int) -> str:
@@ -648,6 +625,12 @@ class GlassDoor:
             time.sleep(self.config.SLEEP_TIMEOUT)
             self.web_driver.get(self.input_data["search jobs"]["glassdoor url"])
 
+            if "just a moment" in self.web_driver.title.lower():
+                self._display_notification(title="Unable to Apply for Job",
+                                           message="A security popup has appeared. Please open the Firefox, click on any job with easy apply and answer the security questions.")
+                self.web_driver.quit()
+                sys.exit(1)
+
             if self.web_driver.title.lower().__contains__("community"):
                 WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='signedInGlobalNav']//a[text()='Jobs']"))).click()
                 time.sleep(self.config.SLEEP_TIMEOUT)
@@ -773,10 +756,8 @@ class GlassDoor:
 
         return False
 
-    def _read_country(self) -> bool:
+    def _read_country(self, country) -> bool:
         """ Read Country & Validate """
-        country: str = self.input_data["user"]["address"]["country"].title()
-
         try:
             if pycountry.countries.lookup(country) is not None:
                 print(Fore.YELLOW + "Country is valid.")
@@ -784,140 +765,7 @@ class GlassDoor:
                 return True
         except LookupError:
             print(Fore.RED + "Can't Validate Country! Please try Again")
-            self._display_notification(title="Validation Failed!", message="Invalid Country! Please try again.")
-
-        return False
-
-    def _read_postal_code(self) -> bool:
-        """ Read Postal Code & Validate """
-        postal_code = self.input_data["user"]["address"]["postal code"].upper()
-
-        if postal_code:
-            print(Fore.YELLOW + "Postal Code is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid Postal Code! Please try again.")
-
-        return False
-
-    def _read_city(self) -> bool:
-        """ Read City & Validate """
-        city = self.input_data["user"]["address"]["city"].title()
-
-        if bool(city.strip()) and city.replace(" ", "").isalpha():
-            print(Fore.YELLOW + "City is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid City Name! Please try again.")
-
-        return False
-
-    def _read_state(self) -> bool:
-        """ Read State & Validate """
-        state = self.input_data["user"]["address"]["state"]
-
-        if bool(state) and state.replace(" ", "").isalpha():
-            print(Fore.YELLOW + "State is Valid")
-
-            return True
-
-        print(Fore.RED + "Invalid State Name!")
-
-        return False
-
-    def _read_street_address(self) -> bool:
-        """ Read Street Address & validate """
-        street_address = self.input_data["user"]["address"]["street address"]
-
-        if bool(street_address) and any(i.isdigit() for i in street_address) and any(i.isalpha() for i in street_address):
-            print(Fore.YELLOW + "Postal Code is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid Street Address! Please try again.")
-
-        return False
-
-    def _read_past_job_title(self) -> bool:
-        """ Read previous Job Title & Validate """
-        job_title = self.input_data["user"]["job history"]["title"]
-
-        if bool(job_title.strip()):
-            print(Fore.YELLOW + "Past Job Title is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid Previous Job Title! Please try again.")
-
-        return False
-
-    def _read_past_job_company(self) -> bool:
-        """ Read previous Company & Validate """
-        company = self.input_data["user"]["job history"]["company"]
-
-        if bool(company):
-            print(Fore.YELLOW + "Past Company is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid Previous Company Name! Please try again.")
-
-        return False
-
-    def _read_past_experience(self) -> bool:
-        """ Read past Work Experience & Validate """
-        try:
-            experience = self.input_data["user"]["job history"]["experience"]
-
-            if experience >= 0:
-                print(Fore.YELLOW + "Past Experience is valid.")
-
-                return True
-
-            print(Fore.RED + "Invalid Input! Experience should be greater than 0.")
-        except ValueError:
-            print(Fore.RED + "Invalid Input! PLease try again.")
-
-        return False
-
-    def _read_first_name(self) -> bool:
-        """ Read First Name & Validate """
-        first_name = self.input_data["user"]["first name"]
-
-        if bool(first_name) and first_name.replace(" ", "").isalpha():
-            print(Fore.YELLOW + "First Name is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid First Name!")
-
-        return False
-
-    def _read_last_name(self) -> bool:
-        """ Read Last Name & Validate """
-        last_name = self.input_data["user"]["last name"]
-
-        if bool(last_name) and last_name.replace(" ", "").isalpha():
-            print(Fore.YELLOW + "Last Name is valid")
-
-            return True
-
-        print(Fore.RED + "Invalid Last Name!")
-
-        return False
-
-    def _read_phone_number(self) -> bool:
-        """ Reads Phone Number & Validate """
-        phone_number = self.input_data["user"]["phone number"]
-
-        if phone_number:
-            print(Fore.YELLOW + "Phone Number is valid.")
-
-            return True
-
-        print(Fore.RED + "Invalid Phone Number! Plase try again.")
+            self._display_notification(title="Validation Failed!", message="Invalid Country!")
 
         return False
 
@@ -955,6 +803,11 @@ class GlassDoor:
 
             sys.exit(1)
 
+    def _load_applied_jobs_file(self) -> None:
+        """ Loads Applied Jobs File """
+        self.applied_jobs = openpyxl.load_workbook("./applied jobs/Applied_Jobs.xlsx")
+        self.active_sheet = self.applied_jobs.active
+
     @staticmethod
     def _read_user_choice() -> int:
         """ Read user choice for Menu options """
@@ -979,7 +832,7 @@ class GlassDoor:
         """ Loads the pre-train Model """
         print(Fore.YELLOW + "Loading Pre Train Model ...")
 
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
 
     def main(self) -> None:
         """ Main Method """
