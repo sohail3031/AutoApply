@@ -25,14 +25,92 @@
   },
 
   "screener questions": {
-    "required questions": {
-      "Do you speak English?": ""
+      "required questions": {
+      "radio": {
+        "_comment": "for this type of question, the value should be either 'yes' or 'no'",
+        "Do you speak English?": "",
+        "Disability": "",
+        "Gender": "",
+        "How many years of work experience do you have": "",
+        "Will you be able to reliably commute or relocate to for this job?": "",
+        "Do you speak Mandarin?": "",
+        "Are you legally authorized to work in?": "",
+        "Have you ever been employed by this company before?": "",
+        "I wish to optout from having my resume reviewed by artificial intelligence as part of the application process": "",
+        "Have you completed a minimum of one-year in your current location?": "",
+        "Is your manager aware of your interest in applying for a new position?": "",
+        "Are you currently a unionized employee with of Companies?": "",
+        "Are you a current employee of the of Companies or its subsidiaries ?": "",
+        "Are you located in and able to work out of the head office at least once a week?": "",
+        "If you are legally eligible to work in": ""
+      },
+      "textarea": {
+        "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
+        "Desired Pay": "",
+        "How many years of relevant work experience do you have in a similar role?": "",
+        "Do you have hands-on experience working with?": "",
+        "List any certifications you have": [],
+        "List all the software products you are proficient in": [],
+        "What date did you speak with your manager about this application?": "",
+        "offers required accommodations in all stages of the recruitment process. If you require an accommodation, please advise us, and we will work with you to meet your needs.": "",
+        "Are you related to a current employee of? If so, please include their name and department name": "",
+        "What is the earliest date you can start in a new position?": ""
+      },
+      "text field": {
+        "_comment": "for this type of question, the value should a 'string' and for 'Date Available' question the value should be in 'YYYY-MM-DD'",
+        "Date Available": "",
+        "Address": "",
+        "City": "",
+        "State/Province": "",
+        "Postal/ZIP": "",
+        "LinkedIn URL": "",
+        "How many years of experience do you have?": "",
+        "Current Company": "",
+        "Current Location": "",
+        "Location (city only)": "",
+        "Are you currently located in?": "",
+        "Are you legally eligible to work in?": "",
+        "Are you currently located in the, and if not, would you be open to relocating here for this role?": "",
+        "What professional accomplishment are you most proud of from the last year?": "",
+        "What has been your most significant professional challenge over the past year?": "",
+        "How did you hear about Basis Technologies?": ""
+      },
+      "checkbox": {
+        "Veteran Status": "",
+        "Self Attestation is required": "",
+        "By checking this box, you will declare that you read and agree to the privacy policy of": ""
+      },
+      "dropdown": {
+        "Country": "",
+        "Ethnicity": "",
+        "What is the highest level of education you have completed?": ""
+      }
     },
 
     "other questions": {
-      "Please list 2-3 dates and time ranges that you could do an interview.": []
+      "radio button": {
+        "Do you require any accommodation to participate in the recruitment process": ""
+      },
+      "textarea": {
+        "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
+        "Please list 2-3 dates and time ranges that you could do an interview.": []
+      },
+      "text field": {
+        "_comment": "for this type of question, the value should a 'string'",
+        "Referred by (Name)": "",
+        "Website, Blog or Portfolio": "",
+        "Pronouns": "",
+        "Do you want to tell us anything else about yourself?": ""
+      }
     }
   },
 
-  "jobs url": []
+  "jobs url": [],
+
+  "search jobs": {
+    "number of jobs": "",
+    "job title": "",
+    "job location": "",
+    "glassdoor url": ""
+  }
 }
