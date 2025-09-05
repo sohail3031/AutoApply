@@ -24,6 +24,7 @@ from sentence_transformers import SentenceTransformer, util
 from autoapply.config import Config
 from autoapply.careerflow import CareerFlow
 from selenium.webdriver.common.keys import Keys
+from json_repair import repair_json
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -862,10 +863,15 @@ class GlassDoor:
         try:
             with open("./input_data/glassdoor_input_data.json", "r") as file:
                 self.input_data = json.load(file)
-        except FileNotFoundError as e:
+        except FileNotFoundError or FileExistsError:
             print(Fore.RED + "Unable to load data from 'glassdoor_input_data.json' file.")
-            print(e)
 
+            sys.exit(1)
+        except json.JSONDecodeError as e:
+            print(Fore.RED + f"Error: Invalid JSON format in 'glassdoor_input_data.json'.\nDetails: {e}")
+            sys.exit(1)
+        except Exception as e:
+            print(Fore.RED + f"Unexpected error while loading JSON: {e}")
             sys.exit(1)
 
     @staticmethod
