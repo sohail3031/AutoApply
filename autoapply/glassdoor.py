@@ -24,7 +24,6 @@ from sentence_transformers import SentenceTransformer, util
 from autoapply.config import Config
 from autoapply.careerflow import CareerFlow
 from selenium.webdriver.common.keys import Keys
-from json_repair import repair_json
 
 class GlassDoor:
     def __init__(self) -> None:
@@ -34,6 +33,7 @@ class GlassDoor:
         self.config: Config = Config()
         self.input_data = None
         self.model: Optional[SentenceTransformer] = None
+        self.answered: set[str] = set()
 
     @staticmethod
     def _show_options() -> None:
@@ -141,12 +141,11 @@ class GlassDoor:
          """
         print(Fore.YELLOW + "Filling Resume Form")
 
+        # Click on the existing Resume
         time.sleep(self.config.SLEEP_TIMEOUT)
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
 
         if self._read_resume_path():
-            # Click on the existing Resume
-            WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[@data-testid='FileResumeCardHeader-title']"))).click()
-
             # Scroll to "Resume Option" button
             self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@data-testid='ResumeOptionsMenu-btn']"))
             time.sleep(self.config.SLEEP_TIMEOUT)
@@ -162,21 +161,21 @@ class GlassDoor:
             pyautogui.hotkey("ctrl", "v")
             pyautogui.press("enter")
 
-            # Click on "Continue" buton
-            time.sleep(self.config.SLEEP_TIMEOUT)
-            continue_buttons = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//button[.//span[normalize-space()='Continue']]")))
+        # Click on "Continue" buton
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        continue_buttons = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.presence_of_all_elements_located((By.XPATH, "//button[.//span[normalize-space()='Continue']]")))
 
-            for index, button in enumerate(continue_buttons, start=1):
-                try:
-                    if button.is_enabled():
-                        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
-                        self.web_driver.find_element(By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]").click()
+        for index, button in enumerate(continue_buttons, start=1):
+            try:
+                if button.is_enabled():
+                    self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, button)
+                    self.web_driver.find_element(By.XPATH, f"(//button[.//span[normalize-space()='Continue']])[{index}]").click()
 
-                        print(Fore.YELLOW + "Filled Resume Form")
+                    print(Fore.YELLOW + "Filled Resume Form")
 
-                        break
-                except ElementNotInteractableException:
-                    print(Fore.RED + f"Failed to click button #{index}")
+                    break
+            except ElementNotInteractableException:
+                print(Fore.RED + f"Failed to click button #{index}")
         else:
             self._display_notification(title="Validation Failed!", message="File Not Found!")
             sys.exit(1)
@@ -226,7 +225,7 @@ class GlassDoor:
                     q_emb = self.model.encode(question, convert_to_tensor=True)
                     similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                    if similarity * 100 > 60:
+                    if similarity * 100 > self.config.SIMILARITY_SCORE:
                         print(Fore.YELLOW + f"{question}: {answer}")
 
                         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//label[.//span[contains(translate(normalize-space(text()),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'{answer.lower()}')]]/input"))).click()
@@ -251,7 +250,7 @@ class GlassDoor:
                     q_emb = self.model.encode(question, convert_to_tensor=True)
                     similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                    if similarity * 100 > 60:
+                    if similarity * 100 > self.config.SIMILARITY_SCORE:
                         print(Fore.YELLOW + f"{question}: {answer}")
 
                         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span/textarea"))).send_keys("\n".join(answer) if isinstance(answer, list) else answer.title())
@@ -301,7 +300,7 @@ class GlassDoor:
                     q_emb = self.model.encode(question, convert_to_tensor=True)
                     similarity = util.pytorch_cos_sim(original_emb, q_emb).item()
 
-                    if similarity * 100 > 60:
+                    if similarity * 100 > self.config.SIMILARITY_SCORE:
                         print(Fore.YELLOW + f"{question}: {answer}")
 
                         Select(self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//select")).select_by_visible_text(answer.title())
@@ -320,10 +319,10 @@ class GlassDoor:
         print(Fore.YELLOW + "Filling Screener Questions Form")
 
         # Get all Questions
-        time.sleep(self.config.SLEEP_TIMEOUT)
+        time.sleep(self.config.WEB_DRIVER_TIMEOUT)
 
         all_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
-        input_type = ""
+        input_type: str = ""
 
         # Get all the Questions, Validate, & Enter the appropriate Answers
         for index, question_div in enumerate(all_questions):
@@ -333,31 +332,43 @@ class GlassDoor:
                 self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, question_div)
 
                 label_text = self.web_driver.find_element(By.XPATH, f"//div[starts-with(@id, 'q_{index}')]//span[@data-testid='rich-text']/span").text
-                original_emb = self.model.encode(label_text, convert_to_tensor=True)
+
+                if label_text in self.answered:
+                    continue
 
                 try:
                     input_element = question_div.find_element(By.XPATH, ".//input | .//textarea | .//select")
                     tag_name = input_element.tag_name.lower()
-
-                    if tag_name.__eq__("input"):
-                        input_type = input_element.get_attribute("type")
-                    else:
-                        input_type = tag_name
+                    input_type = input_element.get_attribute("type") if tag_name.__eq__("input") else tag_name
 
                     print(f"Q{index} → {label_text} → {input_type}")
-                except Exception:
+                except NoSuchElementException:
                     print(f"Q{index} → {label_text} → No input field found")
+
+                original_emb = self.model.encode(label_text, convert_to_tensor=True)
 
                 if input_type.__eq__("radio") or input_type.__eq__("checkbox"):
                     self._fill_radio_checkbox_questions(original_emb=original_emb, index=index, question_type=input_type)
-                elif input_type.__eq__("textarea"):
-                    self._fill_textarea_questions(original_emb=original_emb, index=index)
                 elif input_type.__eq__("text"):
                     self._fill_text_field_questions(original_emb=original_emb, index=index)
-                else:
+                elif input_type.__eq__("textarea"):
+                    self._fill_textarea_questions(original_emb=original_emb, index=index)
+                elif input_type.__eq__("select"):
                     self._fill_dropdown_questions(original_emb=original_emb, index=index)
+                else:
+                    print(Fore.RED + f"Skipping question: {label_text} (unsupported or no input)")
+
+                # Mark as answered
+                self.answered.add(label_text)
+                time.sleep(self.config.SLEEP_TIMEOUT)
+
+                dynamic_questions = WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.visibility_of_all_elements_located((By.XPATH, "//div[starts-with(@id, 'q_')]")))
+
+                if len(all_questions) < len(dynamic_questions):
+                    break
+
             except Exception as e:
-                print(Fore.RED + f"Error: {e}")
+                print(Fore.RED + f"Error: {type(e).__name__}")
 
         # Click 'Continue' button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button/span[text()='Continue']"))
@@ -368,6 +379,8 @@ class GlassDoor:
 
     def _submit_job_application(self) -> bool:
         """ Review & Submit the Job Application """
+        time.sleep(self.config.SLEEP_TIMEOUT)
+        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//div[@data-testid='fullName']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//div[@data-testid='fullName']"))
 
@@ -384,7 +397,13 @@ class GlassDoor:
 
             return True
         else:
+            print(Fore.YELLOW + "Filling Final Form False")
+
+            self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "(//a[text()='Edit'])[1]"))
+            time.sleep(self.config.SLEEP_TIMEOUT)
             self.web_driver.find_element(By.XPATH, "(//a[text()='Edit'])[1]").click()
+
+            print(Fore.YELLOW + "Filled Final Form False")
 
             return False
 
@@ -425,8 +444,8 @@ class GlassDoor:
         if bool(self.input_data["user"]["phone number"]):
             print(Fore.YELLOW + "Phone Number is valid.")
 
-            time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).clear()
+            time.sleep(self.config.SLEEP_TIMEOUT)
             WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//input[@type='tel']"))).send_keys(self.input_data["user"]["phone number"])
         else:
             print(Fore.RED + "Invalid Phone Number!")
@@ -446,13 +465,6 @@ class GlassDoor:
                     break
             except ElementNotInteractableException:
                 print(Fore.RED + f"Failed to click button #{index}")
-
-        # # Click on the Continue button
-        # self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[data-testid='continue-button']"))
-        # time.sleep(self.config.SLEEP_TIMEOUT)
-        # WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[data-testid='continue-button']"))).click()
-
-        # print(Fore.YELLOW + "Filled Contact Information Form")
 
     def _process_easy_apply(self) -> None:
         """ Automate the Job with 'Easy Apply' button """
@@ -491,6 +503,12 @@ class GlassDoor:
                     self._display_notification(title="Success", message="Applied to Job Successfully")
 
                     break
+            else:
+                self.web_driver.close()
+                self.web_driver.switch_to.window(self.web_driver.window_handles[0])
+                self._handle_application_button()
+
+            time.sleep(self.config.WEB_DRIVER_TIMEOUT)
 
         # Closing the current window
         self.web_driver.close()
@@ -896,11 +914,9 @@ class GlassDoor:
 
     def _load_pre_train_model(self) -> None:
         """ Loads the pre-train Model """
-        print(Fore.YELLOW + "Loading Pre Train Model ...")
+        print(Fore.YELLOW + "Loading Pre Train Model ...\n")
 
         self.model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-
-        print(Fore.YELLOW + "Loaded Pre Train Model ...")
 
     def main(self) -> None:
         """ Main Method """

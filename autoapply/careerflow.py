@@ -81,9 +81,9 @@ class CareerFlow:
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.ID, "basic_location"))).send_keys(job_data[4])
 
         # Enter Job Description
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.CSS_SELECTOR, "#basic_description .ql-editor"))
+        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//div[@id='basic_description']/div/div"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#basic_description .ql-editor"))).send_keys(job_data[5])
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='basic_description']/div/div"))).send_keys(job_data[5])
 
         # Click on the Save button
         self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
@@ -91,6 +91,7 @@ class CareerFlow:
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
 
         # Closing the current window
+        time.sleep(self.config.WEB_DRIVER_TIMEOUT)
         self.web_driver.close()
         self.web_driver.switch_to.window(self.web_driver.window_handles[0])
 

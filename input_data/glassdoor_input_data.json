@@ -42,7 +42,11 @@
         "Are you currently a unionized employee with of Companies?": "",
         "Are you a current employee of the of Companies or its subsidiaries ?": "",
         "Are you located in and able to work out of the head office at least once a week?": "",
-        "If you are legally eligible to work in": ""
+        "If you are legally eligible to work in": "",
+        "Êtes-vous légalement autorisé à travailler dans le pays où vous posez votre candidature?": "",
+        "Avez-vous déjà été employé par cette entreprise?": "",
+        "I do not want my resume to be reviewed by artificial intelligence as part of the job application process.": "",
+        "Cet employeur peut utiliser un algorithme lié à l’intelligence artificielle pour fournir une comparaison initiale de la scolarité, de l’expérience et des compétences du candidat par rapport aux exigences de celles mentionnées dans la description de poste. Cette analyse donne lieu à une note relative à la pertinence du profil, qui constitue l’un des nombreux facteurs qu’un employeur potentiel passe en revue lorsqu’il prend ses décisions relativement à l’entrevue. Il n’y a aucune note de démarcation, et toutes les applications sont visibles pour les employeurs.": ""
       },
       "textarea": {
         "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
@@ -50,11 +54,15 @@
         "How many years of relevant work experience do you have in a similar role?": "",
         "Do you have hands-on experience working with?": "",
         "List any certifications you have": [],
+        "Dressez la liste de toutes les certifications dont vous disposez.": [],
         "List all the software products you are proficient in": [],
         "What date did you speak with your manager about this application?": "",
         "offers required accommodations in all stages of the recruitment process. If you require an accommodation, please advise us, and we will work with you to meet your needs.": "",
         "Are you related to a current employee of? If so, please include their name and department name": "",
-        "What is the earliest date you can start in a new position?": ""
+        "What is the earliest date you can start in a new position?": "",
+        "Combien d'années d'expérience professionnelle pertinente avez-vous dans un rôle similaire?": "",
+        "Do you have hands-on experience working with Shopify, including theme customization using Liquid and building or integrating Shopify apps via REST or GraphQL APIs?": "",
+        "Dressez la liste de tous les produits logiciels que vous maîtrisez.": []
       },
       "text field": {
         "_comment": "for this type of question, the value should a 'string' and for 'Date Available' question the value should be in 'YYYY-MM-DD'",
@@ -73,12 +81,17 @@
         "Are you currently located in the, and if not, would you be open to relocating here for this role?": "",
         "What professional accomplishment are you most proud of from the last year?": "",
         "What has been your most significant professional challenge over the past year?": "",
-        "How did you hear about Basis Technologies?": ""
+        "How did you hear about Basis Technologies?": "",
+        "Website link": "",
+        "Please enter your full name.": "",
+        "Veuillez entrer votre nom complet.": ""
       },
       "checkbox": {
         "Veteran Status": "",
         "Self Attestation is required": "",
-        "By checking this box, you will declare that you read and agree to the privacy policy of": ""
+        "By checking this box, you will declare that you read and agree to the privacy policy of": "",
+        "I certify that I have read and understood the instructions for this job application and that my answers to the preceding questions and statements are complete and truthful to the best of my knowledge.I certify that I have read and understood the instructions for this job application and that my answers to the preceding questions and statements are complete and truthful to the best of my knowledge.": "",
+        "Une auto-attestation est requise.": ""
       },
       "dropdown": {
         "Country": "",
@@ -88,19 +101,28 @@
     },
 
     "other questions": {
-      "radio button": {
+      "radio": {
         "Do you require any accommodation to participate in the recruitment process": ""
       },
       "textarea": {
         "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
-        "Please list 2-3 dates and time ranges that you could do an interview.": []
+        "Please list 2-3 dates and time ranges that you could do an interview.": [],
+        "Voulez-vous nous dire autre chose à votre sujet?": []
       },
       "text field": {
         "_comment": "for this type of question, the value should a 'string'",
         "Referred by (Name)": "",
         "Website, Blog or Portfolio": "",
         "Pronouns": "",
-        "Do you want to tell us anything else about yourself?": ""
+        "Do you want to tell us anything else about yourself?": "",
+        "Current company": "",
+        "Numéro de téléphone": ""
+      },
+      "checkbox": {
+      },
+      "dropdown": {
+        "Numéro de téléphone cellulaire": "",
+        "Home Phone Number (numéro de téléphone au domicile)": ""
       }
     }
   },
