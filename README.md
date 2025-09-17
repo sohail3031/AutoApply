@@ -25,6 +25,7 @@ No more endless scrolling or repetitive clicks – just smart, efficient, and cu
 - **🔍 Multi-Platform Support** – Extend automation to LinkedIn, Indeed, and more job boards.
 - **🌐 Headless Mode** – Faster, resource-friendly execution without opening a visible browser window.
 - **🌐 More Security Questions** – Different job applications having different screener questions on GlassDoor/Indeed.
+- **🔍 Multi-Language Support** - Some jobs and some questions are in different language.
 
 ---
 
