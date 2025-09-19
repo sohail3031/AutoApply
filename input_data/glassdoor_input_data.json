@@ -27,7 +27,6 @@
   "screener questions": {
       "required questions": {
       "radio": {
-        "_comment": "for this type of question, the value should be either 'yes' or 'no'",
         "Do you speak English?": "",
         "Disability": "",
         "Gender": "",
@@ -46,10 +45,11 @@
         "Êtes-vous légalement autorisé à travailler dans le pays où vous posez votre candidature?": "",
         "Avez-vous déjà été employé par cette entreprise?": "",
         "I do not want my resume to be reviewed by artificial intelligence as part of the job application process.": "",
-        "Cet employeur peut utiliser un algorithme lié à l’intelligence artificielle pour fournir une comparaison initiale de la scolarité, de l’expérience et des compétences du candidat par rapport aux exigences de celles mentionnées dans la description de poste. Cette analyse donne lieu à une note relative à la pertinence du profil, qui constitue l’un des nombreux facteurs qu’un employeur potentiel passe en revue lorsqu’il prend ses décisions relativement à l’entrevue. Il n’y a aucune note de démarcation, et toutes les applications sont visibles pour les employeurs.": ""
+        "Cet employeur peut utiliser un algorithme lié à l’intelligence artificielle pour fournir une comparaison initiale de la scolarité, de l’expérience et des compétences du candidat par rapport aux exigences de celles mentionnées dans la description de poste. Cette analyse donne lieu à une note relative à la pertinence du profil, qui constitue l’un des nombreux facteurs qu’un employeur potentiel passe en revue lorsqu’il prend ses décisions relativement à l’entrevue. Il n’y a aucune note de démarcation, et toutes les applications sont visibles pour les employeurs.": "",
+        "Do you currently require sponsorship to work in Canada?": "",
+        "Are you located in Toronto, ON?": ""
       },
       "textarea": {
-        "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
         "Desired Pay": "",
         "How many years of relevant work experience do you have in a similar role?": "",
         "Do you have hands-on experience working with?": "",
@@ -65,7 +65,6 @@
         "Dressez la liste de tous les produits logiciels que vous maîtrisez.": []
       },
       "text field": {
-        "_comment": "for this type of question, the value should a 'string' and for 'Date Available' question the value should be in 'YYYY-MM-DD'",
         "Date Available": "",
         "Address": "",
         "City": "",
@@ -105,12 +104,10 @@
         "Do you require any accommodation to participate in the recruitment process": ""
       },
       "textarea": {
-        "_comment": "for this type of question, the value should be either 'string' or a 'list of strings'",
         "Please list 2-3 dates and time ranges that you could do an interview.": [],
         "Voulez-vous nous dire autre chose à votre sujet?": []
       },
       "text field": {
-        "_comment": "for this type of question, the value should a 'string'",
         "Referred by (Name)": "",
         "Website, Blog or Portfolio": "",
         "Pronouns": "",
@@ -127,7 +124,7 @@
     }
   },
 
-  "jobs url": [],
+  "jobs url": [""],
 
   "search jobs": {
     "number of jobs": "",

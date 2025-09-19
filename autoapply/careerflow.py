@@ -86,9 +86,9 @@ class CareerFlow:
         WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//div[@id='basic_description']/div/div"))).send_keys(job_data[5])
 
         # Click on the Save button
-        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//span[text()='Submit']"))
+        self.web_driver.execute_script(self.config.WEB_DRIVER_SCROLL_BEHAVIOUR, self.web_driver.find_element(By.XPATH, "//button[@type='submit']"))
         time.sleep(self.config.SLEEP_TIMEOUT)
-        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//span[text()='Submit']"))).click()
+        WebDriverWait(self.web_driver, self.config.WEB_DRIVER_TIMEOUT).until(EC.element_to_be_clickable((By.XPATH, "//button[@type='submit']"))).click()
 
         # Closing the current window
         time.sleep(self.config.WEB_DRIVER_TIMEOUT)
@@ -105,6 +105,7 @@ class CareerFlow:
 
         # Get the Title of the Page
         time.sleep(self.config.SLEEP_TIMEOUT)
+
         if "Login" in self.web_driver.title:
             self._display_notification(title="Unable to Save Job to CareerFlow", message="Please Login at CareerFlow to save the Job.")
 
@@ -113,6 +114,8 @@ class CareerFlow:
         job_data: list[str] = self._glassdoor_read_job_details()
 
         # Switch to CareerFlow page
+        time.sleep(self.config.SLEEP_TIMEOUT)
         self.web_driver.switch_to.window(self.web_driver.window_handles[1])
 
+        time.sleep(self.config.SLEEP_TIMEOUT)
         self._glassdoor_fill_career_flow_job_form(job_data)

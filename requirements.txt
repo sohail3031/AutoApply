@@ -1,5 +1,4 @@
 colorama==0.4.6
-json_repair==0.50.0
 plyer==2.1.0
 pyautogui==0.9.54
 pycountry==24.6.1
